@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+// 指定等会文件生成出来的package
+package service;
+
+// 定义request
+message VoteRequest {
+    int32 term = 1;
+    string nodeId = 2;
+}
+// 定义response
+message Response{
+    int32 code =1;
+    string msg=2;
+}
+
+message VoteResponse {
+    Response rsp = 1;
+    bool result=2;
+}
+
+// 定义服务主体
+service ApiService{
+    // 定义方法
+    rpc Vote(VoteRequest) returns(VoteResponse);
+}
