@@ -1,0 +1,33 @@
+# autoenv stuff.
+.env
+
+# Stuff makefile generates.
+bin
+vendor
+rootfs/alpine/opt
+rootfs/ubuntu/opt
+
+# Dirs default config creates if not existed.
+log
+data
+member
+
+# MacOS stuff.
+.DS_Store
+
+# GoLand IDE
+.idea/
+
+# vscode
+.vscode/
+
+# goreleaser
+dist/
+
+# golang build cache for docker
+build/cache
+build/bin
+
+easegress.pid
+
+*.exe
