@@ -82,7 +82,7 @@ func (r *raft) runLeader() {
 			}
 		case <-timeoutCh:
 			timeoutCh = randomTimeout(time.Second * 1)
-			r.heartbeat(&api.LeaderRequest{Term: r.Term, NodeId: r.Id})
+			r.heartbeat(&api.HeartbeatRequest{Term: r.Term, NodeId: r.Id})
 		}
 
 	}
@@ -154,7 +154,7 @@ func (r *raft) sendVoteRequestToAll(request *api.VoteRequest) {
 	}
 }
 
-func (r *raft) heartbeat(request *api.LeaderRequest) {
+func (r *raft) heartbeat(request *api.HeartbeatRequest) {
 
 	for _, node := range r.nodes {
 		if node == fmt.Sprintf("%s:%d", r.Ip, r.Port) {
@@ -170,7 +170,7 @@ func (r *raft) heartbeat(request *api.LeaderRequest) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			api.NewApiServiceClient(conn).Leader(ctx, request)
+			api.NewApiServiceClient(conn).Heartbeat(ctx, request)
 
 		}(node)
 	}
