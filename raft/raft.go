@@ -21,20 +21,20 @@ type Raft interface {
 	Heartbeat(ctx context.Context, in *api.HeartbeatRequest) (*api.Response, error)
 }
 type raft struct {
-	Id       string
-	Ip       string
-	Port     int
-	Term     int32
-	nodes    []string
-	State    StateEnum
-	timeout  int
-	stable   set
-	rpcCh    chan *api.LeaderRequest
-	leaderId string
+	Id          string
+	Ip          string
+	Port        int
+	Term        int32
+	nodes       []string
+	State       StateEnum
+	timeout     int
+	stable      set
+	heartbeatCh chan *api.HeartbeatRequest
+	leaderId    string
 }
 
 func NewRaft(conf *Config) Raft {
-	raft := raft{stable: NewSet(), rpcCh: make(chan *api.LeaderRequest, 1)}
+	raft := raft{stable: NewSet(), heartbeatCh: make(chan *api.HeartbeatRequest, 1)}
 	raft.Init(conf)
 	return &raft
 }
@@ -75,14 +75,14 @@ func (r *raft) runLeader() {
 	for r.State == Leader {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.Ip, r.Port)).Info("runLeader")
 		select {
-		case req := <-r.rpcCh:
+		case req := <-r.heartbeatCh:
 			if req.Term > r.Term {
 				r.State = Follower
 				r.leaderId = req.NodeId
 			}
 		case <-timeoutCh:
 			timeoutCh = randomTimeout(time.Second * 1)
-			r.sendLeader(&api.LeaderRequest{Term: r.Term, NodeId: r.Id})
+			r.heartbeat(&api.LeaderRequest{Term: r.Term, NodeId: r.Id})
 		}
 
 	}
@@ -95,7 +95,7 @@ func (r *raft) runCandidate() {
 	for r.State == Candidate {
 		fmt.Println("runCandidate")
 		select {
-		case req := <-r.rpcCh:
+		case req := <-r.heartbeatCh:
 			if req.Term > r.Term {
 				r.State = Follower
 				r.leaderId = req.NodeId
@@ -154,7 +154,7 @@ func (r *raft) sendVoteRequestToAll(request *api.VoteRequest) {
 	}
 }
 
-func (r *raft) sendLeader(request *api.LeaderRequest) {
+func (r *raft) heartbeat(request *api.LeaderRequest) {
 
 	for _, node := range r.nodes {
 		if node == fmt.Sprintf("%s:%d", r.Ip, r.Port) {
@@ -181,7 +181,7 @@ func (r *raft) runFollower() {
 	for r.State == Follower {
 		fmt.Println("runFollower")
 		select {
-		case req := <-r.rpcCh:
+		case req := <-r.heartbeatCh:
 			if req.Term > r.Term {
 				r.leaderId = req.NodeId
 			}
@@ -206,11 +206,11 @@ func (r *raft) VoteFor(ctx context.Context, request *api.VoteRequest) (*api.Vote
 }
 
 func (r *raft) Leader(ctx context.Context, req *api.LeaderRequest) (*api.Response, error) {
-	r.rpcCh <- req
-	return &api.Response{Code: 100000}, nil
-}
-func (r *raft) Heartbeat(ctx context.Context, in *api.HeartbeatRequest) (*api.Response, error) {
 	return nil, nil
+}
+func (r *raft) Heartbeat(ctx context.Context, req *api.HeartbeatRequest) (*api.Response, error) {
+	r.heartbeatCh <- req
+	return &api.Response{Code: 100000}, nil
 }
 func randomTimeout(minVal time.Duration) <-chan time.Time {
 	if minVal == 0 {
