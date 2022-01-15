@@ -12,31 +12,37 @@ import (
 
 type Server struct {
 	raft Raft
-	conf Config
+	conf *Config
 }
 
-func NewServer(raft Raft, conf Config) *Server {
-	return &Server{raft: raft}
+func NewServer(raft Raft, conf *Config) *Server {
+	return &Server{raft: raft, conf: conf}
 }
 
-func (server *Server) Vote(ctx context.Context, req *service.VoteRequest) (*service.VoteResponse, error) {
+func (server *Server) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
 
 	return server.raft.VoteFor(ctx, req)
+}
+func (server *Server) Leader(ctx context.Context, req *api.LeaderRequest) (*api.Response, error) {
+	return server.raft.Leader(ctx, req)
+}
+func (server *Server) Heartbeat(ctx context.Context, req *api.HeartbeatRequest) (*api.Response, error) {
+	return server.raft.Heartbeat(ctx, req)
 }
 
 type ServiceManager struct {
 	Server *Server
 }
 
-func NewServiceManager(server *Server) ServiceManager {
-	return ServiceManager{Server: server}
+func NewServiceManager(server *Server) *ServiceManager {
+	return &ServiceManager{Server: server}
 }
 func (manager ServiceManager) RegisterService(server *grpc.Server) {
-	service.RegisterApiServiceServer(server, manager.Server)
+	api.RegisterApiServiceServer(server, manager.Server)
 }
 
 func (manager *ServiceManager) Start() (net.Listener, error) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", manager.Server.conf.Node.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", manager.Server.conf.Node.Port))
 	if err != nil {
 		return nil, err
 	}

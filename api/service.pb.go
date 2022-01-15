@@ -3,7 +3,7 @@
 
 // 指定等会文件生成出来的package
 
-package service
+package api
 
 import (
 	context "context"
@@ -169,29 +169,128 @@ func (m *VoteResponse) GetResult() bool {
 	return false
 }
 
+type LeaderRequest struct {
+	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	NodeId               string   `protobuf:"bytes,2,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LeaderRequest) Reset()         { *m = LeaderRequest{} }
+func (m *LeaderRequest) String() string { return proto.CompactTextString(m) }
+func (*LeaderRequest) ProtoMessage()    {}
+func (*LeaderRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{3}
+}
+
+func (m *LeaderRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LeaderRequest.Unmarshal(m, b)
+}
+func (m *LeaderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LeaderRequest.Marshal(b, m, deterministic)
+}
+func (m *LeaderRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaderRequest.Merge(m, src)
+}
+func (m *LeaderRequest) XXX_Size() int {
+	return xxx_messageInfo_LeaderRequest.Size(m)
+}
+func (m *LeaderRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaderRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LeaderRequest proto.InternalMessageInfo
+
+func (m *LeaderRequest) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *LeaderRequest) GetNodeId() string {
+	if m != nil {
+		return m.NodeId
+	}
+	return ""
+}
+
+type HeartbeatRequest struct {
+	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	NodeId               string   `protobuf:"bytes,2,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *HeartbeatRequest) Reset()         { *m = HeartbeatRequest{} }
+func (m *HeartbeatRequest) String() string { return proto.CompactTextString(m) }
+func (*HeartbeatRequest) ProtoMessage()    {}
+func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{4}
+}
+
+func (m *HeartbeatRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_HeartbeatRequest.Unmarshal(m, b)
+}
+func (m *HeartbeatRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_HeartbeatRequest.Marshal(b, m, deterministic)
+}
+func (m *HeartbeatRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeartbeatRequest.Merge(m, src)
+}
+func (m *HeartbeatRequest) XXX_Size() int {
+	return xxx_messageInfo_HeartbeatRequest.Size(m)
+}
+func (m *HeartbeatRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeartbeatRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeartbeatRequest proto.InternalMessageInfo
+
+func (m *HeartbeatRequest) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *HeartbeatRequest) GetNodeId() string {
+	if m != nil {
+		return m.NodeId
+	}
+	return ""
+}
+
 func init() {
-	proto.RegisterType((*VoteRequest)(nil), "service.VoteRequest")
-	proto.RegisterType((*Response)(nil), "service.Response")
-	proto.RegisterType((*VoteResponse)(nil), "service.VoteResponse")
+	proto.RegisterType((*VoteRequest)(nil), "api.VoteRequest")
+	proto.RegisterType((*Response)(nil), "api.Response")
+	proto.RegisterType((*VoteResponse)(nil), "api.VoteResponse")
+	proto.RegisterType((*LeaderRequest)(nil), "api.LeaderRequest")
+	proto.RegisterType((*HeartbeatRequest)(nil), "api.HeartbeatRequest")
 }
 
 func init() { proto.RegisterFile("service.proto", fileDescriptor_a0b84a42fa06f626) }
 
 var fileDescriptor_a0b84a42fa06f626 = []byte{
-	// 198 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x90, 0x41, 0x0b, 0x82, 0x30,
-	0x14, 0xc7, 0x31, 0xcd, 0xec, 0x59, 0x50, 0xa3, 0x42, 0x3a, 0x89, 0x5d, 0x3c, 0x49, 0xe8, 0xa9,
-	0xa3, 0xc7, 0xe8, 0xb6, 0xa0, 0x0f, 0x90, 0x3e, 0x42, 0x48, 0xb7, 0xb6, 0xd9, 0xe7, 0x8f, 0xcd,
-	0x19, 0xd1, 0xed, 0xff, 0xdf, 0xe3, 0xf7, 0x7b, 0xdb, 0x60, 0x29, 0x51, 0xbc, 0x9b, 0x0a, 0x33,
-	0x2e, 0x98, 0x62, 0x64, 0x66, 0x6b, 0x72, 0x82, 0xf0, 0xc6, 0x14, 0x52, 0x7c, 0xf5, 0x28, 0x15,
-	0x21, 0xe0, 0x29, 0x14, 0x6d, 0xe4, 0xc4, 0x4e, 0x3a, 0xa5, 0x26, 0x93, 0x1d, 0xf8, 0x1d, 0xab,
-	0xf1, 0x5c, 0x47, 0x93, 0xd8, 0x49, 0xe7, 0xd4, 0xb6, 0xe4, 0x08, 0x01, 0x45, 0xc9, 0x59, 0x27,
-	0x51, 0x73, 0x15, 0xab, 0x71, 0xe4, 0x74, 0x26, 0x2b, 0x70, 0x5b, 0xf9, 0xb0, 0x90, 0x8e, 0xc9,
-	0x05, 0x16, 0xc3, 0x32, 0x4b, 0x1d, 0xc0, 0x15, 0x92, 0x1b, 0x28, 0xcc, 0xd7, 0xd9, 0x78, 0xc5,
-	0x71, 0x4e, 0xf5, 0x54, 0xaf, 0x17, 0x28, 0xfb, 0xa7, 0x32, 0xa6, 0x80, 0xda, 0x96, 0x97, 0x00,
-	0x25, 0x6f, 0xae, 0x03, 0x43, 0x0a, 0xf0, 0xb4, 0x9a, 0x6c, 0xbe, 0x96, 0x9f, 0x67, 0xed, 0xb7,
-	0x7f, 0xa7, 0x83, 0xff, 0xee, 0x9b, 0xcf, 0x28, 0x3e, 0x01, 0x00, 0x00, 0xff, 0xff, 0x9f, 0x89,
-	0xb7, 0x76, 0x1d, 0x01, 0x00, 0x00,
+	// 256 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0x41, 0x4b, 0x03, 0x31,
+	0x10, 0x85, 0x89, 0x5b, 0x97, 0x76, 0xea, 0xc2, 0x3a, 0xa0, 0x94, 0x5e, 0x2c, 0x39, 0x15, 0x0a,
+	0x8b, 0xd6, 0x93, 0x08, 0x82, 0x27, 0x15, 0x3c, 0x45, 0xf0, 0x9e, 0x36, 0x83, 0x04, 0x6c, 0x13,
+	0x93, 0xd4, 0xff, 0xe2, 0xbf, 0x95, 0x64, 0xd3, 0xd2, 0xee, 0x71, 0x6f, 0x33, 0xfb, 0xf8, 0x76,
+	0xde, 0x7b, 0x81, 0xca, 0x93, 0xfb, 0xd5, 0x6b, 0x6a, 0xac, 0x33, 0xc1, 0x60, 0x21, 0xad, 0xe6,
+	0x0f, 0x30, 0xfe, 0x34, 0x81, 0x04, 0xfd, 0xec, 0xc8, 0x07, 0x44, 0x18, 0x04, 0x72, 0x9b, 0x09,
+	0x9b, 0xb1, 0xf9, 0xb9, 0x48, 0x33, 0x5e, 0x43, 0xb9, 0x35, 0x8a, 0xde, 0xd4, 0xe4, 0x6c, 0xc6,
+	0xe6, 0x23, 0x91, 0x37, 0x7e, 0x0b, 0x43, 0x41, 0xde, 0x9a, 0xad, 0xa7, 0xc8, 0xad, 0x8d, 0xa2,
+	0x3d, 0x17, 0x67, 0xac, 0xa1, 0xd8, 0xf8, 0xaf, 0x0c, 0xc5, 0x91, 0xbf, 0xc0, 0x45, 0x7b, 0x2c,
+	0x53, 0x37, 0x50, 0x38, 0x6f, 0x13, 0x34, 0x5e, 0x56, 0x8d, 0xb4, 0xba, 0xd9, 0x6b, 0x22, 0x2a,
+	0xf1, 0xb4, 0x23, 0xbf, 0xfb, 0x0e, 0xe9, 0x2f, 0x43, 0x91, 0x37, 0xfe, 0x08, 0xd5, 0x3b, 0x49,
+	0x45, 0xae, 0x8f, 0xef, 0x27, 0xa8, 0x5f, 0x49, 0xba, 0xb0, 0x22, 0x19, 0x7a, 0xf0, 0xcb, 0x3f,
+	0x06, 0xf0, 0x6c, 0xf5, 0x47, 0x5b, 0x26, 0x2e, 0x60, 0x10, 0x43, 0x61, 0x9d, 0xfc, 0x1f, 0x95,
+	0x39, 0xbd, 0x3c, 0xfa, 0x92, 0x13, 0x2f, 0xa0, 0x6c, 0x8d, 0x23, 0x26, 0xf1, 0x24, 0xc5, 0xf4,
+	0xb4, 0x02, 0xbc, 0x83, 0xd1, 0xc1, 0x28, 0x5e, 0x25, 0xad, 0x6b, 0xbc, 0x83, 0xac, 0xca, 0xf4,
+	0xb4, 0xf7, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x46, 0x49, 0x8f, 0x59, 0xeb, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -208,6 +307,9 @@ const _ = grpc.SupportPackageIsVersion4
 type ApiServiceClient interface {
 	// 定义方法
 	Vote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error)
+	// 定义方法
+	Leader(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*Response, error)
+	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*Response, error)
 }
 
 type apiServiceClient struct {
@@ -220,7 +322,25 @@ func NewApiServiceClient(cc *grpc.ClientConn) ApiServiceClient {
 
 func (c *apiServiceClient) Vote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error) {
 	out := new(VoteResponse)
-	err := c.cc.Invoke(ctx, "/service.ApiService/Vote", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/api.ApiService/Vote", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiServiceClient) Leader(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/api.ApiService/Leader", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiServiceClient) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/api.ApiService/Heartbeat", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +351,9 @@ func (c *apiServiceClient) Vote(ctx context.Context, in *VoteRequest, opts ...gr
 type ApiServiceServer interface {
 	// 定义方法
 	Vote(context.Context, *VoteRequest) (*VoteResponse, error)
+	// 定义方法
+	Leader(context.Context, *LeaderRequest) (*Response, error)
+	Heartbeat(context.Context, *HeartbeatRequest) (*Response, error)
 }
 
 // UnimplementedApiServiceServer can be embedded to have forward compatible implementations.
@@ -239,6 +362,12 @@ type UnimplementedApiServiceServer struct {
 
 func (*UnimplementedApiServiceServer) Vote(ctx context.Context, req *VoteRequest) (*VoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Vote not implemented")
+}
+func (*UnimplementedApiServiceServer) Leader(ctx context.Context, req *LeaderRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Leader not implemented")
+}
+func (*UnimplementedApiServiceServer) Heartbeat(ctx context.Context, req *HeartbeatRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
 }
 
 func RegisterApiServiceServer(s *grpc.Server, srv ApiServiceServer) {
@@ -255,7 +384,7 @@ func _ApiService_Vote_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/service.ApiService/Vote",
+		FullMethod: "/api.ApiService/Vote",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ApiServiceServer).Vote(ctx, req.(*VoteRequest))
@@ -263,13 +392,57 @@ func _ApiService_Vote_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiService_Leader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).Leader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.ApiService/Leader",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).Leader(ctx, req.(*LeaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ApiService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeartbeatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.ApiService/Heartbeat",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).Heartbeat(ctx, req.(*HeartbeatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ApiService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "service.ApiService",
+	ServiceName: "api.ApiService",
 	HandlerType: (*ApiServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Vote",
 			Handler:    _ApiService_Vote_Handler,
+		},
+		{
+			MethodName: "Leader",
+			Handler:    _ApiService_Leader_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _ApiService_Heartbeat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
