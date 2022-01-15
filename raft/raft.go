@@ -75,6 +75,11 @@ func (r *raft) runLeader() {
 	for r.State == Leader {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.Ip, r.Port)).Info("runLeader")
 		select {
+		case req := <-r.rpcCh:
+			if req.Term > r.Term {
+				r.State = Follower
+				r.leaderId = req.NodeId
+			}
 		case <-timeoutCh:
 			timeoutCh = randomTimeout(time.Second * 1)
 			r.sendLeader(&api.LeaderRequest{Term: r.Term, NodeId: r.Id})
