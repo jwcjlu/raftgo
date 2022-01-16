@@ -3,6 +3,7 @@ package raft
 import (
 	"context"
 	"fmt"
+	"github.com/raftgo/config"
 	"net"
 
 	"google.golang.org/grpc"
@@ -12,10 +13,10 @@ import (
 
 type Server struct {
 	raft Raft
-	conf *Config
+	conf *config.Config
 }
 
-func NewServer(raft Raft, conf *Config) *Server {
+func NewServer(raft Raft, conf *config.Config) *Server {
 	return &Server{raft: raft, conf: conf}
 }
 
@@ -28,6 +29,15 @@ func (server *Server) Leader(ctx context.Context, req *api.LeaderRequest) (*api.
 }
 func (server *Server) Heartbeat(ctx context.Context, req *api.HeartbeatRequest) (*api.Response, error) {
 	return server.raft.Heartbeat(ctx, req)
+}
+func (server *Server) FetchEntries(ctx context.Context, req *api.FetchEntryRequest) (*api.FetchEntryResponse, error) {
+	return server.raft.FetchEntries(ctx, req)
+}
+func (server *Server) SendEntry(ctx context.Context, req *api.Entry) (*api.Response, error) {
+	return server.raft.SendEntry(ctx, req)
+}
+func (server *Server) CommitEntry(ctx context.Context, req *api.CommitEntryReq) (*api.Response, error) {
+	return server.raft.CommitEntry(ctx, req)
 }
 
 type ServiceManager struct {

@@ -28,6 +28,27 @@ message HeartbeatRequest {
     string nodeId = 2;
 }
 
+message FetchEntryRequest {
+    int32 term = 1;
+    int64 lastId = 3;
+}
+message Entry {
+    int32 term = 1;
+    bytes key = 2;
+    bytes value = 3;
+    int64 lastId = 4;
+}
+
+
+message FetchEntryResponse {
+    Response rsp = 1;
+    repeated Entry entries=2;
+}
+message CommitEntryReq{
+    int32 term = 1;
+    int64 entry_id = 2;
+}
+
 // 定义服务主体
 service ApiService {
     // 定义方法
@@ -36,4 +57,10 @@ service ApiService {
     rpc Leader (LeaderRequest) returns (Response);
 
     rpc Heartbeat (HeartbeatRequest) returns (Response);
+
+    rpc FetchEntries (FetchEntryRequest) returns (FetchEntryResponse);
+
+    rpc SendEntry (Entry) returns (Response);
+
+    rpc CommitEntry (CommitEntryReq) returns (Response);
 }

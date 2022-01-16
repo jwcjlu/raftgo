@@ -1,4 +1,4 @@
-package raft
+package config
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ type Config struct {
 		Port    int
 		Id      string
 		Timeout int
+		ApiPort int `yaml:"api_port"`
 	}
 	Cluster struct {
 		Nodes []string

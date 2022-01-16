@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/raftgo/api"
+	"github.com/raftgo/config"
+	"github.com/raftgo/store"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,6 +21,11 @@ type Raft interface {
 	VoteFor(ctx context.Context, request *api.VoteRequest) (*api.VoteResponse, error)
 	Leader(ctx context.Context, in *api.LeaderRequest) (*api.Response, error)
 	Heartbeat(ctx context.Context, in *api.HeartbeatRequest) (*api.Response, error)
+	Put(key, value []byte) error
+	Get(key []byte) ([]byte, error)
+	FetchEntries(context.Context, *api.FetchEntryRequest) (*api.FetchEntryResponse, error)
+	SendEntry(context.Context, *api.Entry) (*api.Response, error)
+	CommitEntry(context.Context, *api.CommitEntryReq) (*api.Response, error)
 }
 type raft struct {
 	Id          string
@@ -31,15 +38,20 @@ type raft struct {
 	stable      set
 	heartbeatCh chan *api.HeartbeatRequest
 	leaderId    string
+	db          store.Store
+	isLeader    bool
+	lastIndex   int64
+	commitIndex int64
 }
 
-func NewRaft(conf *Config) Raft {
+func NewRaft(conf *config.Config, db store.Store) Raft {
 	raft := raft{stable: NewSet(), heartbeatCh: make(chan *api.HeartbeatRequest, 1)}
 	raft.Init(conf)
+	raft.db = db
 	return &raft
 }
 
-func (r *raft) Init(conf *Config) {
+func (r *raft) Init(conf *config.Config) {
 	r.nodes = conf.Cluster.Nodes
 	r.Id = conf.Node.Id
 	r.Ip = conf.Node.Ip
@@ -78,6 +90,7 @@ func (r *raft) runLeader() {
 		case req := <-r.heartbeatCh:
 			if req.Term > r.Term {
 				r.State = Follower
+				r.isLeader = false
 				r.leaderId = req.NodeId
 			}
 		case <-timeoutCh:
@@ -97,6 +110,7 @@ func (r *raft) runCandidate() {
 		select {
 		case req := <-r.heartbeatCh:
 			if req.Term > r.Term {
+				r.isLeader = false
 				r.State = Follower
 				r.leaderId = req.NodeId
 			}
@@ -151,6 +165,7 @@ func (r *raft) sendVoteRequestToAll(request *api.VoteRequest) {
 	logrus.Info("wait!")
 	if r.stable.len() > 0 {
 		r.State = Leader
+		r.isLeader = true
 	}
 }
 
@@ -204,12 +219,156 @@ func (r *raft) VoteFor(ctx context.Context, request *api.VoteRequest) (*api.Vote
 	}
 	return &api.VoteResponse{Rsp: SuccessFul, Result: false}, nil
 }
+func (r *raft) Put(key, value []byte) error {
+	if !r.isLeader {
+		return fmt.Errorf("not leader")
+	}
+	r.lastIndex++
+	entry := store.Entry{
+		Key:   key,
+		Value: value,
+		Meta:  store.Meta{Term: r.Term, LastIndex: r.lastIndex},
+	}
+	r.db.Put(entry)
+	r.sendEntry(entry)
+	return nil
+}
+
+func (r *raft) sendEntry(entry store.Entry) {
+	set := NewSet()
+	wg := sync.WaitGroup{}
+	wg.Add(len(r.nodes))
+	for _, node := range r.nodes {
+		if node == fmt.Sprintf("%s:%d", r.Ip, r.Port) {
+			continue
+			wg.Done()
+		}
+		go func(node string) {
+			conn, err := grpc.Dial(node, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			defer func() {
+				if conn != nil {
+					conn.Close()
+				}
+				wg.Done()
+			}()
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			_, err = api.NewApiServiceClient(conn).SendEntry(ctx, &api.Entry{
+				Term:   entry.Meta.Term,
+				Key:    entry.Key,
+				Value:  entry.Value,
+				LastId: entry.Meta.LastIndex,
+			})
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			set.add(node)
+
+		}(node)
+	}
+	wg.Wait()
+	logrus.WithField("node", fmt.Sprintf("%s:%d", r.Ip, r.Port)).Infof("send msg finish:%v", entry)
+
+	if set.len() > 0 {
+		r.db.Commit(entry.Meta.Term, entry.Meta.LastIndex)
+		r.commitIndex = entry.Meta.LastIndex
+		logrus.WithField("node", fmt.Sprintf("%s:%d", r.Ip, r.Port)).Infof("commit start:%v", entry)
+		wg.Add(set.len())
+		for _, node := range set.data {
+			if node == fmt.Sprintf("%s:%d", r.Ip, r.Port) {
+				continue
+				wg.Done()
+			}
+			go func(node string) {
+				conn, err := grpc.Dial(node, grpc.WithTransportCredentials(insecure.NewCredentials()))
+				defer func() {
+					if conn != nil {
+						conn.Close()
+					}
+					wg.Done()
+				}()
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				_, err = api.NewApiServiceClient(conn).CommitEntry(ctx, &api.CommitEntryReq{
+					Term:    entry.Meta.Term,
+					EntryId: entry.Meta.LastIndex,
+				})
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+
+				set.add(node)
+
+			}(node)
+		}
+	}
+	wg.Wait()
+	logrus.WithField("node", fmt.Sprintf("%s:%d", r.Ip, r.Port)).Infof("commit end:%v", entry)
+}
+
+func (r *raft) Get(key []byte) ([]byte, error) {
+	return r.db.Get(key)
+}
 
 func (r *raft) Leader(ctx context.Context, req *api.LeaderRequest) (*api.Response, error) {
 	return nil, nil
 }
 func (r *raft) Heartbeat(ctx context.Context, req *api.HeartbeatRequest) (*api.Response, error) {
 	r.heartbeatCh <- req
+	return &api.Response{Code: 100000}, nil
+}
+
+func (r *raft) FetchEntries(ctx context.Context, req *api.FetchEntryRequest) (*api.FetchEntryResponse, error) {
+	if !r.isLeader {
+		return &api.FetchEntryResponse{}, fmt.Errorf("not leader")
+	}
+	entries, err := r.db.FetchEntries(req.Term, req.LastId)
+	if err != nil {
+		return &api.FetchEntryResponse{}, err
+	}
+	var data []*api.Entry
+	for _, entry := range entries {
+		data = append(data, &api.Entry{
+			Term:   entry.Meta.Term,
+			Key:    entry.Key,
+			Value:  entry.Value,
+			LastId: entry.Meta.LastIndex,
+		})
+	}
+
+	return &api.FetchEntryResponse{Entries: data}, nil
+}
+func (r *raft) SendEntry(ctx context.Context, entry *api.Entry) (*api.Response, error) {
+	if entry.Term < r.Term {
+		return nil, fmt.Errorf("term is invalid")
+	}
+	r.db.Put(store.Entry{
+		Key:   entry.Key,
+		Value: entry.Value,
+		Meta:  store.Meta{Term: entry.Term, LastIndex: entry.LastId},
+	})
+	r.lastIndex = entry.LastId
+	return &api.Response{Code: 100000}, nil
+}
+func (r *raft) CommitEntry(ctx context.Context, req *api.CommitEntryReq) (*api.Response, error) {
+	if req.Term < r.Term {
+		return nil, fmt.Errorf("term is invalid")
+	}
+	if req.EntryId > r.lastIndex {
+		return nil, fmt.Errorf("catch up")
+	}
+	r.db.Commit(req.Term, req.EntryId)
 	return &api.Response{Code: 100000}, nil
 }
 func randomTimeout(minVal time.Duration) <-chan time.Time {

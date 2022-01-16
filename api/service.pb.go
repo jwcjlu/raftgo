@@ -263,34 +263,252 @@ func (m *HeartbeatRequest) GetNodeId() string {
 	return ""
 }
 
+type FetchEntryRequest struct {
+	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	LastId               int64    `protobuf:"varint,3,opt,name=lastId,proto3" json:"lastId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FetchEntryRequest) Reset()         { *m = FetchEntryRequest{} }
+func (m *FetchEntryRequest) String() string { return proto.CompactTextString(m) }
+func (*FetchEntryRequest) ProtoMessage()    {}
+func (*FetchEntryRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{5}
+}
+
+func (m *FetchEntryRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FetchEntryRequest.Unmarshal(m, b)
+}
+func (m *FetchEntryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FetchEntryRequest.Marshal(b, m, deterministic)
+}
+func (m *FetchEntryRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FetchEntryRequest.Merge(m, src)
+}
+func (m *FetchEntryRequest) XXX_Size() int {
+	return xxx_messageInfo_FetchEntryRequest.Size(m)
+}
+func (m *FetchEntryRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_FetchEntryRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FetchEntryRequest proto.InternalMessageInfo
+
+func (m *FetchEntryRequest) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *FetchEntryRequest) GetLastId() int64 {
+	if m != nil {
+		return m.LastId
+	}
+	return 0
+}
+
+type Entry struct {
+	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	Key                  []byte   `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value                []byte   `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	LastId               int64    `protobuf:"varint,4,opt,name=lastId,proto3" json:"lastId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Entry) Reset()         { *m = Entry{} }
+func (m *Entry) String() string { return proto.CompactTextString(m) }
+func (*Entry) ProtoMessage()    {}
+func (*Entry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{6}
+}
+
+func (m *Entry) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Entry.Unmarshal(m, b)
+}
+func (m *Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Entry.Marshal(b, m, deterministic)
+}
+func (m *Entry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Entry.Merge(m, src)
+}
+func (m *Entry) XXX_Size() int {
+	return xxx_messageInfo_Entry.Size(m)
+}
+func (m *Entry) XXX_DiscardUnknown() {
+	xxx_messageInfo_Entry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Entry proto.InternalMessageInfo
+
+func (m *Entry) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *Entry) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+func (m *Entry) GetValue() []byte {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *Entry) GetLastId() int64 {
+	if m != nil {
+		return m.LastId
+	}
+	return 0
+}
+
+type FetchEntryResponse struct {
+	Rsp                  *Response `protobuf:"bytes,1,opt,name=rsp,proto3" json:"rsp,omitempty"`
+	Entries              []*Entry  `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *FetchEntryResponse) Reset()         { *m = FetchEntryResponse{} }
+func (m *FetchEntryResponse) String() string { return proto.CompactTextString(m) }
+func (*FetchEntryResponse) ProtoMessage()    {}
+func (*FetchEntryResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{7}
+}
+
+func (m *FetchEntryResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FetchEntryResponse.Unmarshal(m, b)
+}
+func (m *FetchEntryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FetchEntryResponse.Marshal(b, m, deterministic)
+}
+func (m *FetchEntryResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FetchEntryResponse.Merge(m, src)
+}
+func (m *FetchEntryResponse) XXX_Size() int {
+	return xxx_messageInfo_FetchEntryResponse.Size(m)
+}
+func (m *FetchEntryResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_FetchEntryResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FetchEntryResponse proto.InternalMessageInfo
+
+func (m *FetchEntryResponse) GetRsp() *Response {
+	if m != nil {
+		return m.Rsp
+	}
+	return nil
+}
+
+func (m *FetchEntryResponse) GetEntries() []*Entry {
+	if m != nil {
+		return m.Entries
+	}
+	return nil
+}
+
+type CommitEntryReq struct {
+	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	EntryId              int64    `protobuf:"varint,2,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CommitEntryReq) Reset()         { *m = CommitEntryReq{} }
+func (m *CommitEntryReq) String() string { return proto.CompactTextString(m) }
+func (*CommitEntryReq) ProtoMessage()    {}
+func (*CommitEntryReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{8}
+}
+
+func (m *CommitEntryReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CommitEntryReq.Unmarshal(m, b)
+}
+func (m *CommitEntryReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CommitEntryReq.Marshal(b, m, deterministic)
+}
+func (m *CommitEntryReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CommitEntryReq.Merge(m, src)
+}
+func (m *CommitEntryReq) XXX_Size() int {
+	return xxx_messageInfo_CommitEntryReq.Size(m)
+}
+func (m *CommitEntryReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CommitEntryReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CommitEntryReq proto.InternalMessageInfo
+
+func (m *CommitEntryReq) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *CommitEntryReq) GetEntryId() int64 {
+	if m != nil {
+		return m.EntryId
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*VoteRequest)(nil), "api.VoteRequest")
 	proto.RegisterType((*Response)(nil), "api.Response")
 	proto.RegisterType((*VoteResponse)(nil), "api.VoteResponse")
 	proto.RegisterType((*LeaderRequest)(nil), "api.LeaderRequest")
 	proto.RegisterType((*HeartbeatRequest)(nil), "api.HeartbeatRequest")
+	proto.RegisterType((*FetchEntryRequest)(nil), "api.FetchEntryRequest")
+	proto.RegisterType((*Entry)(nil), "api.Entry")
+	proto.RegisterType((*FetchEntryResponse)(nil), "api.FetchEntryResponse")
+	proto.RegisterType((*CommitEntryReq)(nil), "api.CommitEntryReq")
 }
 
 func init() { proto.RegisterFile("service.proto", fileDescriptor_a0b84a42fa06f626) }
 
 var fileDescriptor_a0b84a42fa06f626 = []byte{
-	// 256 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0x41, 0x4b, 0x03, 0x31,
-	0x10, 0x85, 0x89, 0x5b, 0x97, 0x76, 0xea, 0xc2, 0x3a, 0xa0, 0x94, 0x5e, 0x2c, 0x39, 0x15, 0x0a,
-	0x8b, 0xd6, 0x93, 0x08, 0x82, 0x27, 0x15, 0x3c, 0x45, 0xf0, 0x9e, 0x36, 0x83, 0x04, 0x6c, 0x13,
-	0x93, 0xd4, 0xff, 0xe2, 0xbf, 0x95, 0x64, 0xd3, 0xd2, 0xee, 0x71, 0x6f, 0x33, 0xfb, 0xf8, 0x76,
-	0xde, 0x7b, 0x81, 0xca, 0x93, 0xfb, 0xd5, 0x6b, 0x6a, 0xac, 0x33, 0xc1, 0x60, 0x21, 0xad, 0xe6,
-	0x0f, 0x30, 0xfe, 0x34, 0x81, 0x04, 0xfd, 0xec, 0xc8, 0x07, 0x44, 0x18, 0x04, 0x72, 0x9b, 0x09,
-	0x9b, 0xb1, 0xf9, 0xb9, 0x48, 0x33, 0x5e, 0x43, 0xb9, 0x35, 0x8a, 0xde, 0xd4, 0xe4, 0x6c, 0xc6,
-	0xe6, 0x23, 0x91, 0x37, 0x7e, 0x0b, 0x43, 0x41, 0xde, 0x9a, 0xad, 0xa7, 0xc8, 0xad, 0x8d, 0xa2,
-	0x3d, 0x17, 0x67, 0xac, 0xa1, 0xd8, 0xf8, 0xaf, 0x0c, 0xc5, 0x91, 0xbf, 0xc0, 0x45, 0x7b, 0x2c,
-	0x53, 0x37, 0x50, 0x38, 0x6f, 0x13, 0x34, 0x5e, 0x56, 0x8d, 0xb4, 0xba, 0xd9, 0x6b, 0x22, 0x2a,
-	0xf1, 0xb4, 0x23, 0xbf, 0xfb, 0x0e, 0xe9, 0x2f, 0x43, 0x91, 0x37, 0xfe, 0x08, 0xd5, 0x3b, 0x49,
-	0x45, 0xae, 0x8f, 0xef, 0x27, 0xa8, 0x5f, 0x49, 0xba, 0xb0, 0x22, 0x19, 0x7a, 0xf0, 0xcb, 0x3f,
-	0x06, 0xf0, 0x6c, 0xf5, 0x47, 0x5b, 0x26, 0x2e, 0x60, 0x10, 0x43, 0x61, 0x9d, 0xfc, 0x1f, 0x95,
-	0x39, 0xbd, 0x3c, 0xfa, 0x92, 0x13, 0x2f, 0xa0, 0x6c, 0x8d, 0x23, 0x26, 0xf1, 0x24, 0xc5, 0xf4,
-	0xb4, 0x02, 0xbc, 0x83, 0xd1, 0xc1, 0x28, 0x5e, 0x25, 0xad, 0x6b, 0xbc, 0x83, 0xac, 0xca, 0xf4,
-	0xb4, 0xf7, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x46, 0x49, 0x8f, 0x59, 0xeb, 0x01, 0x00, 0x00,
+	// 413 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0xeb, 0xd3, 0x40,
+	0x10, 0x25, 0xdd, 0xb6, 0xb6, 0x93, 0x54, 0xf2, 0x5b, 0xb5, 0xc6, 0x5e, 0x0c, 0x41, 0x24, 0x50,
+	0x28, 0x5a, 0x4f, 0x22, 0x58, 0x44, 0xfc, 0x53, 0xf0, 0xb4, 0x05, 0x2f, 0x1e, 0x24, 0x6d, 0x06,
+	0x5d, 0x6c, 0xfe, 0xb8, 0xbb, 0x2d, 0xe4, 0x83, 0xf9, 0xfd, 0x64, 0x77, 0x93, 0x92, 0xa6, 0x05,
+	0xa5, 0xb7, 0x99, 0x7d, 0x79, 0x6f, 0x66, 0xde, 0x4c, 0x60, 0x22, 0x51, 0x1c, 0xf9, 0x0e, 0x17,
+	0xa5, 0x28, 0x54, 0x41, 0x49, 0x52, 0xf2, 0xe8, 0x35, 0xb8, 0x5f, 0x0b, 0x85, 0x0c, 0x7f, 0x1f,
+	0x50, 0x2a, 0x4a, 0xa1, 0xaf, 0x50, 0x64, 0x81, 0x13, 0x3a, 0xf1, 0x80, 0x99, 0x98, 0x4e, 0x61,
+	0x98, 0x17, 0x29, 0xae, 0xd3, 0xa0, 0x17, 0x3a, 0xf1, 0x98, 0xd5, 0x59, 0xf4, 0x02, 0x46, 0x0c,
+	0x65, 0x59, 0xe4, 0x12, 0x35, 0x6f, 0x57, 0xa4, 0xd8, 0xf0, 0x74, 0x4c, 0x7d, 0x20, 0x99, 0xfc,
+	0x51, 0x93, 0x74, 0x18, 0x7d, 0x02, 0xcf, 0x16, 0xab, 0x59, 0x4f, 0x81, 0x08, 0x59, 0x1a, 0x92,
+	0xbb, 0x9c, 0x2c, 0x92, 0x92, 0x2f, 0x1a, 0x8c, 0x69, 0x44, 0x97, 0x16, 0x28, 0x0f, 0x7b, 0x65,
+	0x54, 0x46, 0xac, 0xce, 0xa2, 0x37, 0x30, 0xf9, 0x82, 0x49, 0x8a, 0xe2, 0x96, 0xbe, 0xdf, 0x82,
+	0xff, 0x19, 0x13, 0xa1, 0xb6, 0x98, 0xa8, 0x5b, 0xf8, 0x2b, 0xb8, 0xfb, 0x88, 0x6a, 0xf7, 0xf3,
+	0x43, 0xae, 0x44, 0xf5, 0x0f, 0x81, 0x7d, 0x22, 0xd5, 0x3a, 0x0d, 0x48, 0xe8, 0xc4, 0x84, 0xd5,
+	0x59, 0xf4, 0x0d, 0x06, 0x86, 0x7b, 0x95, 0xe4, 0x03, 0xf9, 0x85, 0x95, 0x29, 0xe9, 0x31, 0x1d,
+	0xd2, 0x87, 0x30, 0x38, 0x26, 0xfb, 0x03, 0x1a, 0x15, 0x8f, 0xd9, 0xa4, 0x25, 0xde, 0xef, 0x88,
+	0xd3, 0x76, 0x77, 0xff, 0xeb, 0xf4, 0x33, 0xb8, 0x87, 0xb9, 0x12, 0x1c, 0x65, 0xd0, 0x0b, 0x49,
+	0xec, 0x2e, 0xc1, 0x7c, 0x64, 0x55, 0x1a, 0x28, 0x5a, 0xc1, 0xfd, 0xf7, 0x45, 0x96, 0x71, 0xd5,
+	0xcc, 0x7e, 0x75, 0x84, 0x27, 0x30, 0xd2, 0x84, 0xea, 0x3b, 0xb7, 0xd6, 0x11, 0x2b, 0x50, 0xad,
+	0xd3, 0xe5, 0x9f, 0x1e, 0xc0, 0xbb, 0x92, 0x6f, 0xec, 0x21, 0xd2, 0x39, 0xf4, 0xf5, 0x41, 0x50,
+	0xdf, 0x14, 0x6b, 0x1d, 0xe2, 0xec, 0xae, 0xf5, 0x52, 0xcf, 0x30, 0x87, 0xa1, 0x5d, 0x3a, 0xa5,
+	0x06, 0x3c, 0xbb, 0x80, 0xd9, 0xf9, 0x50, 0xf4, 0x25, 0x8c, 0x4f, 0x4b, 0xa6, 0x8f, 0x0c, 0xd6,
+	0x5d, 0x7a, 0x97, 0xb2, 0x02, 0xef, 0xe4, 0x1c, 0x47, 0x49, 0xa7, 0x06, 0xbe, 0x58, 0xf5, 0xec,
+	0xf1, 0xc5, 0x7b, 0x2d, 0xf0, 0x1c, 0xc6, 0x1b, 0xcc, 0x53, 0xbb, 0xdb, 0x96, 0x7f, 0x97, 0xbd,
+	0xb9, 0x2d, 0x17, 0xe9, 0x03, 0x83, 0x9e, 0xfb, 0xda, 0xa1, 0x6c, 0x87, 0xe6, 0x97, 0x7d, 0xf5,
+	0x37, 0x00, 0x00, 0xff, 0xff, 0x54, 0x16, 0xda, 0xc1, 0xc3, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -310,6 +528,9 @@ type ApiServiceClient interface {
 	// 定义方法
 	Leader(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*Response, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*Response, error)
+	FetchEntries(ctx context.Context, in *FetchEntryRequest, opts ...grpc.CallOption) (*FetchEntryResponse, error)
+	SendEntry(ctx context.Context, in *Entry, opts ...grpc.CallOption) (*Response, error)
+	CommitEntry(ctx context.Context, in *CommitEntryReq, opts ...grpc.CallOption) (*Response, error)
 }
 
 type apiServiceClient struct {
@@ -347,6 +568,33 @@ func (c *apiServiceClient) Heartbeat(ctx context.Context, in *HeartbeatRequest, 
 	return out, nil
 }
 
+func (c *apiServiceClient) FetchEntries(ctx context.Context, in *FetchEntryRequest, opts ...grpc.CallOption) (*FetchEntryResponse, error) {
+	out := new(FetchEntryResponse)
+	err := c.cc.Invoke(ctx, "/api.ApiService/FetchEntries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiServiceClient) SendEntry(ctx context.Context, in *Entry, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/api.ApiService/SendEntry", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiServiceClient) CommitEntry(ctx context.Context, in *CommitEntryReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/api.ApiService/CommitEntry", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServiceServer is the server API for ApiService service.
 type ApiServiceServer interface {
 	// 定义方法
@@ -354,6 +602,9 @@ type ApiServiceServer interface {
 	// 定义方法
 	Leader(context.Context, *LeaderRequest) (*Response, error)
 	Heartbeat(context.Context, *HeartbeatRequest) (*Response, error)
+	FetchEntries(context.Context, *FetchEntryRequest) (*FetchEntryResponse, error)
+	SendEntry(context.Context, *Entry) (*Response, error)
+	CommitEntry(context.Context, *CommitEntryReq) (*Response, error)
 }
 
 // UnimplementedApiServiceServer can be embedded to have forward compatible implementations.
@@ -368,6 +619,15 @@ func (*UnimplementedApiServiceServer) Leader(ctx context.Context, req *LeaderReq
 }
 func (*UnimplementedApiServiceServer) Heartbeat(ctx context.Context, req *HeartbeatRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
+}
+func (*UnimplementedApiServiceServer) FetchEntries(ctx context.Context, req *FetchEntryRequest) (*FetchEntryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchEntries not implemented")
+}
+func (*UnimplementedApiServiceServer) SendEntry(ctx context.Context, req *Entry) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendEntry not implemented")
+}
+func (*UnimplementedApiServiceServer) CommitEntry(ctx context.Context, req *CommitEntryReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitEntry not implemented")
 }
 
 func RegisterApiServiceServer(s *grpc.Server, srv ApiServiceServer) {
@@ -428,6 +688,60 @@ func _ApiService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiService_FetchEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchEntryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).FetchEntries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.ApiService/FetchEntries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).FetchEntries(ctx, req.(*FetchEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ApiService_SendEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Entry)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).SendEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.ApiService/SendEntry",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).SendEntry(ctx, req.(*Entry))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ApiService_CommitEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitEntryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).CommitEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.ApiService/CommitEntry",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).CommitEntry(ctx, req.(*CommitEntryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ApiService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "api.ApiService",
 	HandlerType: (*ApiServiceServer)(nil),
@@ -443,6 +757,18 @@ var _ApiService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Heartbeat",
 			Handler:    _ApiService_Heartbeat_Handler,
+		},
+		{
+			MethodName: "FetchEntries",
+			Handler:    _ApiService_FetchEntries_Handler,
+		},
+		{
+			MethodName: "SendEntry",
+			Handler:    _ApiService_SendEntry_Handler,
+		},
+		{
+			MethodName: "CommitEntry",
+			Handler:    _ApiService_CommitEntry_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
