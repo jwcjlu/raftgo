@@ -12,7 +12,6 @@ message VoteRequest {
 }
 //VoteResponse 投票的响应
 message VoteResponse {
-    Response rsp = 1;
     int32 term = 2;
     bool vote_granted = 3;
 }
