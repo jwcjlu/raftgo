@@ -3,12 +3,11 @@ package raft
 import (
 	"context"
 	"fmt"
-	"io"
-	"time"
-
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io"
+	"time"
 
 	"github.com/jwcjlu/raftgo/api"
 )
@@ -45,11 +44,8 @@ func (node *Node) Vote(ctx context.Context, request *api.VoteRequest) (*api.Vote
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer func() {
-		node.pool.Release(conn)
-		cancel()
-	}()
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 	rsp, err := api.NewRaftServiceClient(conn).Vote(ctx, request)
 	if err != nil {
 		logrus.Error(err)
@@ -64,11 +60,8 @@ func (node *Node) AppendEntries(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer func() {
-		node.pool.Release(conn)
-		cancel()
-	}()
+/*	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()*/
 	rsp, err := api.NewRaftServiceClient(conn).AppendEntries(ctx, request)
 	if err != nil {
 		logrus.Error(err)
@@ -78,13 +71,10 @@ func (node *Node) AppendEntries(ctx context.Context,
 }
 
 func (node *Node) getConn() (*grpc.ClientConn, error) {
-	conn, err := node.pool.Acquire(100 * time.Microsecond)
-	if err != nil {
-		return nil, err
-	}
+	return  grpc.Dial(fmt.Sprintf("%s:%d", node.Ip, node.Port),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-	clientConn, _ := conn.(*grpc.ClientConn)
-	return clientConn, err
+
 }
 
 func (node *Node) Close() {

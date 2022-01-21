@@ -3,16 +3,17 @@ package raft
 import (
 	"context"
 	"fmt"
-	"github.com/jwcjlu/raftgo/config"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jwcjlu/raftgo/config"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/jwcjlu/raftgo/api"
 )
@@ -37,6 +38,8 @@ import (
 type Raft struct {
 	id                      string
 	leaderId                string
+	ip                      string
+	port                    int
 	term                    int32
 	isLeader                bool
 	lastApplied             int64
@@ -48,6 +51,7 @@ type Raft struct {
 	voteResponseChan        chan *api.VoteResponse
 	appendEntryResponseChan chan *api.AppendEntriesResponse
 	LifeCycle
+	mu sync.RWMutex
 }
 
 func (r *Raft) Start() {
@@ -64,6 +68,11 @@ func NewRaft(conf *config.Config) *Raft {
 	return &raft
 }
 func (r *Raft) Init(conf *config.Config) {
+	r.mu = sync.RWMutex{}
+	r.ip = conf.Node.Ip
+	r.port = conf.Node.Port
+	r.appendEntryResponseChan=make(chan *api.AppendEntriesResponse,1)
+	r.appendEntryChan=make(chan *api.AppendEntriesRequest,1)
 	for _, ipPort := range conf.Cluster.Nodes {
 		ipPorts := strings.Split(ipPort, ":")
 		port, _ := strconv.Atoi(ipPorts[1])
@@ -81,6 +90,7 @@ func (r *Raft) Init(conf *config.Config) {
 			}},
 		})
 	}
+
 }
 
 func (r *Raft) Run() {
@@ -99,33 +109,67 @@ func (r *Raft) Run() {
 }
 
 func (r *Raft) runLeader() {
-	timeoutCh := randomTimeout(time.Microsecond * 100)
+	timeoutCh := randomTimeout(time.Millisecond * 800)
 	for r.state == Leader {
+		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runLeader")
 		select {
 		case req := <-r.appendEntryChan:
+			rsp := &api.AppendEntriesResponse{Term: r.term, Success: false}
 			if req.Term > r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
+				rsp.Success = true
 			}
+			r.appendEntryResponseChan <- rsp
 		case <-timeoutCh:
-			timeoutCh = randomTimeout(time.Second * 2)
+			for _, n := range r.custer {
+				go func(node *Node) {
+					_, err := node.AppendEntries(context.Background(), &api.AppendEntriesRequest{
+						Term:     r.term,
+						LeaderId: r.leaderId,
+					})
+					if err != nil {
+						logrus.Error(err)
+					}
+				}(n)
+			}
+			timeoutCh = randomTimeout(time.Millisecond * 800)
 		}
 	}
 }
 
+func (r *Raft) HandleVote(request *api.VoteRequest) (*api.VoteResponse, error) {
+	rsp := api.VoteResponse{Term: r.term, VoteGranted: false}
+	if request.Term > r.term {
+		rsp.VoteGranted = true
+	}
+	return &rsp, nil
+}
+
 func (r *Raft) runFollower() {
 	timeoutCh := randomTimeout(time.Second * 2)
+	lastTime:=time.Now()
 	for r.state == Follower {
+		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runFollower")
 		select {
 		case req := <-r.appendEntryChan:
+			lastTime=time.Now()
+			rsp := &api.AppendEntriesResponse{Term: r.term, Success: false}
 			if req.Term > r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
+				rsp.Success = true
 			}
+			r.appendEntryResponseChan <- rsp
+
 		case <-timeoutCh:
 			timeoutCh = randomTimeout(time.Second * 2)
+			if time.Now().Sub(lastTime).Seconds() < 2*time.Second.Seconds() {
+				continue
+			}
+			r.state = Candidate
 
 		}
 	}
@@ -133,44 +177,67 @@ func (r *Raft) runFollower() {
 
 func (r *Raft) runCandidate() {
 	timeoutCh := randomTimeout(time.Second * 2)
+	isVote := true
 	for r.state == Candidate {
+		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runCandidate term=%d", r.term)
 		select {
 		case req := <-r.appendEntryChan:
+			timeoutCh = randomTimeout(time.Second * 2)
+			rsp := &api.AppendEntriesResponse{Term: r.term, Success: false}
 			if req.Term > r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
+				rsp.Success = true
 			}
+			r.appendEntryResponseChan <- rsp
 		case <-timeoutCh:
-			timeoutCh = randomTimeout(time.Second * 2)
+			if !isVote {
+				timeoutCh = randomTimeout(time.Second * 2)
+				continue
+			}
+			isVote = false
+			voteGranted := 1
+			r.term++
 			wg := sync.WaitGroup{}
 			wg.Add(len(r.custer))
-			for _, node := range r.custer {
-				go func() {
+			for _, n := range r.custer {
+				go func(node *Node, term int32) {
 					defer wg.Done()
 					rsp, err := node.Vote(context.Background(), &api.VoteRequest{
-						Term:         r.term,
+						Term:         term,
 						CandidateId:  r.id,
 						LastLogIndex: 0,
 						LastLogTerm:  0,
 					})
 					if err != nil {
 						logrus.Error(err)
+						return
+					}
+					if rsp.Term > r.term {
+						r.term = rsp.Term
 					}
 					if rsp.VoteGranted {
-
+						voteGranted++
 					}
-				}()
+				}(n, r.term)
 			}
 			wg.Wait()
-
+			if voteGranted >= r.QuorumSize() {
+				r.state = Leader
+			}
+			timeoutCh = randomTimeout(time.Second * 2)
+			isVote = true
 		}
 	}
 }
 
-func (r *Raft) Quore() bool {
-
+func (r *Raft) QuorumSize() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return (len(r.custer) / 2) + 1
 }
+
 func randomTimeout(minVal time.Duration) <-chan time.Time {
 	if minVal == 0 {
 		return nil

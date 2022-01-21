@@ -13,12 +13,13 @@ func main() {
 	file := os.Args[1]
 	container := buildContainer(file)
 	if err := container.Invoke(func(rpcServer *grpc.Server, service *raft.ServiceManager) {
-		_, err := service.Start()
+		listener, err := service.Start()
 		if err != nil {
 			panic(err)
 		}
 		service.RegisterService(rpcServer)
 		// 4. 运行rpcServer，传入listener
+		rpcServer.Serve(listener)
 	}); err != nil {
 		panic(err)
 	}
@@ -29,7 +30,7 @@ func buildContainer(configFile string) *dig.Container {
 	container := dig.New()
 	var constructors []interface{}
 	constructors = append(constructors, config.NewConf,
-		grpc.NewServer, raft.NewServiceManager)
+		grpc.NewServer, raft.NewServiceManager,raft.NewRaft,raft.NewRaftService)
 	for _, constructor := range constructors {
 		if err := container.Provide(constructor); err != nil {
 			panic(err)
