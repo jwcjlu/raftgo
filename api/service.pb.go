@@ -26,10 +26,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// 定义request
+//VoteRequest 投票的请求
 type VoteRequest struct {
 	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	NodeId               string   `protobuf:"bytes,2,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	CandidateId          string   `protobuf:"bytes,2,opt,name=candidate_id,json=candidateId,proto3" json:"candidate_id,omitempty"`
+	LastLogIndex         int64    `protobuf:"varint,3,opt,name=last_log_index,json=lastLogIndex,proto3" json:"last_log_index,omitempty"`
+	LastLogTerm          int32    `protobuf:"varint,4,opt,name=last_log_term,json=lastLogTerm,proto3" json:"last_log_term,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -67,74 +69,41 @@ func (m *VoteRequest) GetTerm() int32 {
 	return 0
 }
 
-func (m *VoteRequest) GetNodeId() string {
+func (m *VoteRequest) GetCandidateId() string {
 	if m != nil {
-		return m.NodeId
+		return m.CandidateId
 	}
 	return ""
 }
 
-// 定义response
-type Response struct {
-	Code                 int32    `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Msg                  string   `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Response) Reset()         { *m = Response{} }
-func (m *Response) String() string { return proto.CompactTextString(m) }
-func (*Response) ProtoMessage()    {}
-func (*Response) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a0b84a42fa06f626, []int{1}
-}
-
-func (m *Response) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Response.Unmarshal(m, b)
-}
-func (m *Response) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Response.Marshal(b, m, deterministic)
-}
-func (m *Response) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Response.Merge(m, src)
-}
-func (m *Response) XXX_Size() int {
-	return xxx_messageInfo_Response.Size(m)
-}
-func (m *Response) XXX_DiscardUnknown() {
-	xxx_messageInfo_Response.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Response proto.InternalMessageInfo
-
-func (m *Response) GetCode() int32 {
+func (m *VoteRequest) GetLastLogIndex() int64 {
 	if m != nil {
-		return m.Code
+		return m.LastLogIndex
 	}
 	return 0
 }
 
-func (m *Response) GetMsg() string {
+func (m *VoteRequest) GetLastLogTerm() int32 {
 	if m != nil {
-		return m.Msg
+		return m.LastLogTerm
 	}
-	return ""
+	return 0
 }
 
+//VoteResponse 投票的响应
 type VoteResponse struct {
-	Rsp                  *Response `protobuf:"bytes,1,opt,name=rsp,proto3" json:"rsp,omitempty"`
-	Result               bool      `protobuf:"varint,2,opt,name=result,proto3" json:"result,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Term                 int32    `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	VoteGranted          bool     `protobuf:"varint,3,opt,name=vote_granted,json=voteGranted,proto3" json:"vote_granted,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *VoteResponse) Reset()         { *m = VoteResponse{} }
 func (m *VoteResponse) String() string { return proto.CompactTextString(m) }
 func (*VoteResponse) ProtoMessage()    {}
 func (*VoteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a0b84a42fa06f626, []int{2}
+	return fileDescriptor_a0b84a42fa06f626, []int{1}
 }
 
 func (m *VoteResponse) XXX_Unmarshal(b []byte) error {
@@ -155,360 +124,314 @@ func (m *VoteResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_VoteResponse proto.InternalMessageInfo
 
-func (m *VoteResponse) GetRsp() *Response {
+func (m *VoteResponse) GetTerm() int32 {
 	if m != nil {
-		return m.Rsp
+		return m.Term
 	}
-	return nil
+	return 0
 }
 
-func (m *VoteResponse) GetResult() bool {
+func (m *VoteResponse) GetVoteGranted() bool {
 	if m != nil {
-		return m.Result
+		return m.VoteGranted
 	}
 	return false
 }
 
-type LeaderRequest struct {
+type AppendEntriesRequest struct {
 	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	NodeId               string   `protobuf:"bytes,2,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	LeaderId             string   `protobuf:"bytes,2,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	PreLogIndex          int64    `protobuf:"varint,3,opt,name=pre_log_index,json=preLogIndex,proto3" json:"pre_log_index,omitempty"`
+	PreLogTerm           int64    `protobuf:"varint,4,opt,name=pre_log_term,json=preLogTerm,proto3" json:"pre_log_term,omitempty"`
+	LeaderCommit         int64    `protobuf:"varint,5,opt,name=leader_commit,json=leaderCommit,proto3" json:"leader_commit,omitempty"`
+	Data                 []byte   `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *LeaderRequest) Reset()         { *m = LeaderRequest{} }
-func (m *LeaderRequest) String() string { return proto.CompactTextString(m) }
-func (*LeaderRequest) ProtoMessage()    {}
-func (*LeaderRequest) Descriptor() ([]byte, []int) {
+func (m *AppendEntriesRequest) Reset()         { *m = AppendEntriesRequest{} }
+func (m *AppendEntriesRequest) String() string { return proto.CompactTextString(m) }
+func (*AppendEntriesRequest) ProtoMessage()    {}
+func (*AppendEntriesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a0b84a42fa06f626, []int{2}
+}
+
+func (m *AppendEntriesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AppendEntriesRequest.Unmarshal(m, b)
+}
+func (m *AppendEntriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AppendEntriesRequest.Marshal(b, m, deterministic)
+}
+func (m *AppendEntriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AppendEntriesRequest.Merge(m, src)
+}
+func (m *AppendEntriesRequest) XXX_Size() int {
+	return xxx_messageInfo_AppendEntriesRequest.Size(m)
+}
+func (m *AppendEntriesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AppendEntriesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AppendEntriesRequest proto.InternalMessageInfo
+
+func (m *AppendEntriesRequest) GetTerm() int32 {
+	if m != nil {
+		return m.Term
+	}
+	return 0
+}
+
+func (m *AppendEntriesRequest) GetLeaderId() string {
+	if m != nil {
+		return m.LeaderId
+	}
+	return ""
+}
+
+func (m *AppendEntriesRequest) GetPreLogIndex() int64 {
+	if m != nil {
+		return m.PreLogIndex
+	}
+	return 0
+}
+
+func (m *AppendEntriesRequest) GetPreLogTerm() int64 {
+	if m != nil {
+		return m.PreLogTerm
+	}
+	return 0
+}
+
+func (m *AppendEntriesRequest) GetLeaderCommit() int64 {
+	if m != nil {
+		return m.LeaderCommit
+	}
+	return 0
+}
+
+func (m *AppendEntriesRequest) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+type InstallSnapshotRequest struct {
+	Term                 int64    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	LeaderId             string   `protobuf:"bytes,2,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	LastIncludedIndex    int64    `protobuf:"varint,3,opt,name=last_included_index,json=lastIncludedIndex,proto3" json:"last_included_index,omitempty"`
+	LastIncludedTerm     int64    `protobuf:"varint,4,opt,name=last_included_term,json=lastIncludedTerm,proto3" json:"last_included_term,omitempty"`
+	Offset               int64    `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
+	Data                 []byte   `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	Done                 bool     `protobuf:"varint,7,opt,name=done,proto3" json:"done,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *InstallSnapshotRequest) Reset()         { *m = InstallSnapshotRequest{} }
+func (m *InstallSnapshotRequest) String() string { return proto.CompactTextString(m) }
+func (*InstallSnapshotRequest) ProtoMessage()    {}
+func (*InstallSnapshotRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a0b84a42fa06f626, []int{3}
 }
 
-func (m *LeaderRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_LeaderRequest.Unmarshal(m, b)
+func (m *InstallSnapshotRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InstallSnapshotRequest.Unmarshal(m, b)
 }
-func (m *LeaderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_LeaderRequest.Marshal(b, m, deterministic)
+func (m *InstallSnapshotRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InstallSnapshotRequest.Marshal(b, m, deterministic)
 }
-func (m *LeaderRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaderRequest.Merge(m, src)
+func (m *InstallSnapshotRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InstallSnapshotRequest.Merge(m, src)
 }
-func (m *LeaderRequest) XXX_Size() int {
-	return xxx_messageInfo_LeaderRequest.Size(m)
+func (m *InstallSnapshotRequest) XXX_Size() int {
+	return xxx_messageInfo_InstallSnapshotRequest.Size(m)
 }
-func (m *LeaderRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaderRequest.DiscardUnknown(m)
+func (m *InstallSnapshotRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_InstallSnapshotRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LeaderRequest proto.InternalMessageInfo
+var xxx_messageInfo_InstallSnapshotRequest proto.InternalMessageInfo
 
-func (m *LeaderRequest) GetTerm() int32 {
+func (m *InstallSnapshotRequest) GetTerm() int64 {
 	if m != nil {
 		return m.Term
 	}
 	return 0
 }
 
-func (m *LeaderRequest) GetNodeId() string {
+func (m *InstallSnapshotRequest) GetLeaderId() string {
 	if m != nil {
-		return m.NodeId
+		return m.LeaderId
 	}
 	return ""
 }
 
-type HeartbeatRequest struct {
-	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	NodeId               string   `protobuf:"bytes,2,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+func (m *InstallSnapshotRequest) GetLastIncludedIndex() int64 {
+	if m != nil {
+		return m.LastIncludedIndex
+	}
+	return 0
+}
+
+func (m *InstallSnapshotRequest) GetLastIncludedTerm() int64 {
+	if m != nil {
+		return m.LastIncludedTerm
+	}
+	return 0
+}
+
+func (m *InstallSnapshotRequest) GetOffset() int64 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *InstallSnapshotRequest) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *InstallSnapshotRequest) GetDone() bool {
+	if m != nil {
+		return m.Done
+	}
+	return false
+}
+
+type InstallSnapshotResponse struct {
+	Term                 int64    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *HeartbeatRequest) Reset()         { *m = HeartbeatRequest{} }
-func (m *HeartbeatRequest) String() string { return proto.CompactTextString(m) }
-func (*HeartbeatRequest) ProtoMessage()    {}
-func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
+func (m *InstallSnapshotResponse) Reset()         { *m = InstallSnapshotResponse{} }
+func (m *InstallSnapshotResponse) String() string { return proto.CompactTextString(m) }
+func (*InstallSnapshotResponse) ProtoMessage()    {}
+func (*InstallSnapshotResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a0b84a42fa06f626, []int{4}
 }
 
-func (m *HeartbeatRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_HeartbeatRequest.Unmarshal(m, b)
+func (m *InstallSnapshotResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InstallSnapshotResponse.Unmarshal(m, b)
 }
-func (m *HeartbeatRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_HeartbeatRequest.Marshal(b, m, deterministic)
+func (m *InstallSnapshotResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InstallSnapshotResponse.Marshal(b, m, deterministic)
 }
-func (m *HeartbeatRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HeartbeatRequest.Merge(m, src)
+func (m *InstallSnapshotResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InstallSnapshotResponse.Merge(m, src)
 }
-func (m *HeartbeatRequest) XXX_Size() int {
-	return xxx_messageInfo_HeartbeatRequest.Size(m)
+func (m *InstallSnapshotResponse) XXX_Size() int {
+	return xxx_messageInfo_InstallSnapshotResponse.Size(m)
 }
-func (m *HeartbeatRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_HeartbeatRequest.DiscardUnknown(m)
+func (m *InstallSnapshotResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_InstallSnapshotResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_HeartbeatRequest proto.InternalMessageInfo
+var xxx_messageInfo_InstallSnapshotResponse proto.InternalMessageInfo
 
-func (m *HeartbeatRequest) GetTerm() int32 {
+func (m *InstallSnapshotResponse) GetTerm() int64 {
 	if m != nil {
 		return m.Term
 	}
 	return 0
 }
 
-func (m *HeartbeatRequest) GetNodeId() string {
-	if m != nil {
-		return m.NodeId
-	}
-	return ""
-}
-
-type FetchEntryRequest struct {
+type AppendEntriesResponse struct {
 	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	LastId               int64    `protobuf:"varint,3,opt,name=lastId,proto3" json:"lastId,omitempty"`
+	Success              bool     `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *FetchEntryRequest) Reset()         { *m = FetchEntryRequest{} }
-func (m *FetchEntryRequest) String() string { return proto.CompactTextString(m) }
-func (*FetchEntryRequest) ProtoMessage()    {}
-func (*FetchEntryRequest) Descriptor() ([]byte, []int) {
+func (m *AppendEntriesResponse) Reset()         { *m = AppendEntriesResponse{} }
+func (m *AppendEntriesResponse) String() string { return proto.CompactTextString(m) }
+func (*AppendEntriesResponse) ProtoMessage()    {}
+func (*AppendEntriesResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a0b84a42fa06f626, []int{5}
 }
 
-func (m *FetchEntryRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_FetchEntryRequest.Unmarshal(m, b)
+func (m *AppendEntriesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AppendEntriesResponse.Unmarshal(m, b)
 }
-func (m *FetchEntryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_FetchEntryRequest.Marshal(b, m, deterministic)
+func (m *AppendEntriesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AppendEntriesResponse.Marshal(b, m, deterministic)
 }
-func (m *FetchEntryRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FetchEntryRequest.Merge(m, src)
+func (m *AppendEntriesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AppendEntriesResponse.Merge(m, src)
 }
-func (m *FetchEntryRequest) XXX_Size() int {
-	return xxx_messageInfo_FetchEntryRequest.Size(m)
+func (m *AppendEntriesResponse) XXX_Size() int {
+	return xxx_messageInfo_AppendEntriesResponse.Size(m)
 }
-func (m *FetchEntryRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_FetchEntryRequest.DiscardUnknown(m)
+func (m *AppendEntriesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AppendEntriesResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_FetchEntryRequest proto.InternalMessageInfo
+var xxx_messageInfo_AppendEntriesResponse proto.InternalMessageInfo
 
-func (m *FetchEntryRequest) GetTerm() int32 {
+func (m *AppendEntriesResponse) GetTerm() int32 {
 	if m != nil {
 		return m.Term
 	}
 	return 0
 }
 
-func (m *FetchEntryRequest) GetLastId() int64 {
+func (m *AppendEntriesResponse) GetSuccess() bool {
 	if m != nil {
-		return m.LastId
+		return m.Success
 	}
-	return 0
-}
-
-type Entry struct {
-	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	Key                  []byte   `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	Value                []byte   `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
-	LastId               int64    `protobuf:"varint,4,opt,name=lastId,proto3" json:"lastId,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Entry) Reset()         { *m = Entry{} }
-func (m *Entry) String() string { return proto.CompactTextString(m) }
-func (*Entry) ProtoMessage()    {}
-func (*Entry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a0b84a42fa06f626, []int{6}
-}
-
-func (m *Entry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Entry.Unmarshal(m, b)
-}
-func (m *Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Entry.Marshal(b, m, deterministic)
-}
-func (m *Entry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Entry.Merge(m, src)
-}
-func (m *Entry) XXX_Size() int {
-	return xxx_messageInfo_Entry.Size(m)
-}
-func (m *Entry) XXX_DiscardUnknown() {
-	xxx_messageInfo_Entry.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Entry proto.InternalMessageInfo
-
-func (m *Entry) GetTerm() int32 {
-	if m != nil {
-		return m.Term
-	}
-	return 0
-}
-
-func (m *Entry) GetKey() []byte {
-	if m != nil {
-		return m.Key
-	}
-	return nil
-}
-
-func (m *Entry) GetValue() []byte {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-func (m *Entry) GetLastId() int64 {
-	if m != nil {
-		return m.LastId
-	}
-	return 0
-}
-
-type FetchEntryResponse struct {
-	Rsp                  *Response `protobuf:"bytes,1,opt,name=rsp,proto3" json:"rsp,omitempty"`
-	Entries              []*Entry  `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
-}
-
-func (m *FetchEntryResponse) Reset()         { *m = FetchEntryResponse{} }
-func (m *FetchEntryResponse) String() string { return proto.CompactTextString(m) }
-func (*FetchEntryResponse) ProtoMessage()    {}
-func (*FetchEntryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a0b84a42fa06f626, []int{7}
-}
-
-func (m *FetchEntryResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_FetchEntryResponse.Unmarshal(m, b)
-}
-func (m *FetchEntryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_FetchEntryResponse.Marshal(b, m, deterministic)
-}
-func (m *FetchEntryResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FetchEntryResponse.Merge(m, src)
-}
-func (m *FetchEntryResponse) XXX_Size() int {
-	return xxx_messageInfo_FetchEntryResponse.Size(m)
-}
-func (m *FetchEntryResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_FetchEntryResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FetchEntryResponse proto.InternalMessageInfo
-
-func (m *FetchEntryResponse) GetRsp() *Response {
-	if m != nil {
-		return m.Rsp
-	}
-	return nil
-}
-
-func (m *FetchEntryResponse) GetEntries() []*Entry {
-	if m != nil {
-		return m.Entries
-	}
-	return nil
-}
-
-type CommitEntryReq struct {
-	Term                 int32    `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
-	EntryId              int64    `protobuf:"varint,2,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CommitEntryReq) Reset()         { *m = CommitEntryReq{} }
-func (m *CommitEntryReq) String() string { return proto.CompactTextString(m) }
-func (*CommitEntryReq) ProtoMessage()    {}
-func (*CommitEntryReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a0b84a42fa06f626, []int{8}
-}
-
-func (m *CommitEntryReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CommitEntryReq.Unmarshal(m, b)
-}
-func (m *CommitEntryReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CommitEntryReq.Marshal(b, m, deterministic)
-}
-func (m *CommitEntryReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CommitEntryReq.Merge(m, src)
-}
-func (m *CommitEntryReq) XXX_Size() int {
-	return xxx_messageInfo_CommitEntryReq.Size(m)
-}
-func (m *CommitEntryReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_CommitEntryReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CommitEntryReq proto.InternalMessageInfo
-
-func (m *CommitEntryReq) GetTerm() int32 {
-	if m != nil {
-		return m.Term
-	}
-	return 0
-}
-
-func (m *CommitEntryReq) GetEntryId() int64 {
-	if m != nil {
-		return m.EntryId
-	}
-	return 0
+	return false
 }
 
 func init() {
 	proto.RegisterType((*VoteRequest)(nil), "api.VoteRequest")
-	proto.RegisterType((*Response)(nil), "api.Response")
 	proto.RegisterType((*VoteResponse)(nil), "api.VoteResponse")
-	proto.RegisterType((*LeaderRequest)(nil), "api.LeaderRequest")
-	proto.RegisterType((*HeartbeatRequest)(nil), "api.HeartbeatRequest")
-	proto.RegisterType((*FetchEntryRequest)(nil), "api.FetchEntryRequest")
-	proto.RegisterType((*Entry)(nil), "api.Entry")
-	proto.RegisterType((*FetchEntryResponse)(nil), "api.FetchEntryResponse")
-	proto.RegisterType((*CommitEntryReq)(nil), "api.CommitEntryReq")
+	proto.RegisterType((*AppendEntriesRequest)(nil), "api.AppendEntriesRequest")
+	proto.RegisterType((*InstallSnapshotRequest)(nil), "api.InstallSnapshotRequest")
+	proto.RegisterType((*InstallSnapshotResponse)(nil), "api.InstallSnapshotResponse")
+	proto.RegisterType((*AppendEntriesResponse)(nil), "api.AppendEntriesResponse")
 }
 
 func init() { proto.RegisterFile("service.proto", fileDescriptor_a0b84a42fa06f626) }
 
 var fileDescriptor_a0b84a42fa06f626 = []byte{
-	// 413 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0xeb, 0xd3, 0x40,
-	0x10, 0x25, 0xdd, 0xb6, 0xb6, 0x93, 0x54, 0xf2, 0x5b, 0xb5, 0xc6, 0x5e, 0x0c, 0x41, 0x24, 0x50,
-	0x28, 0x5a, 0x4f, 0x22, 0x58, 0x44, 0xfc, 0x53, 0xf0, 0xb4, 0x05, 0x2f, 0x1e, 0x24, 0x6d, 0x06,
-	0x5d, 0x6c, 0xfe, 0xb8, 0xbb, 0x2d, 0xe4, 0x83, 0xf9, 0xfd, 0x64, 0x77, 0x93, 0x92, 0xa6, 0x05,
-	0xa5, 0xb7, 0x99, 0x7d, 0x79, 0x6f, 0x66, 0xde, 0x4c, 0x60, 0x22, 0x51, 0x1c, 0xf9, 0x0e, 0x17,
-	0xa5, 0x28, 0x54, 0x41, 0x49, 0x52, 0xf2, 0xe8, 0x35, 0xb8, 0x5f, 0x0b, 0x85, 0x0c, 0x7f, 0x1f,
-	0x50, 0x2a, 0x4a, 0xa1, 0xaf, 0x50, 0x64, 0x81, 0x13, 0x3a, 0xf1, 0x80, 0x99, 0x98, 0x4e, 0x61,
-	0x98, 0x17, 0x29, 0xae, 0xd3, 0xa0, 0x17, 0x3a, 0xf1, 0x98, 0xd5, 0x59, 0xf4, 0x02, 0x46, 0x0c,
-	0x65, 0x59, 0xe4, 0x12, 0x35, 0x6f, 0x57, 0xa4, 0xd8, 0xf0, 0x74, 0x4c, 0x7d, 0x20, 0x99, 0xfc,
-	0x51, 0x93, 0x74, 0x18, 0x7d, 0x02, 0xcf, 0x16, 0xab, 0x59, 0x4f, 0x81, 0x08, 0x59, 0x1a, 0x92,
-	0xbb, 0x9c, 0x2c, 0x92, 0x92, 0x2f, 0x1a, 0x8c, 0x69, 0x44, 0x97, 0x16, 0x28, 0x0f, 0x7b, 0x65,
-	0x54, 0x46, 0xac, 0xce, 0xa2, 0x37, 0x30, 0xf9, 0x82, 0x49, 0x8a, 0xe2, 0x96, 0xbe, 0xdf, 0x82,
-	0xff, 0x19, 0x13, 0xa1, 0xb6, 0x98, 0xa8, 0x5b, 0xf8, 0x2b, 0xb8, 0xfb, 0x88, 0x6a, 0xf7, 0xf3,
-	0x43, 0xae, 0x44, 0xf5, 0x0f, 0x81, 0x7d, 0x22, 0xd5, 0x3a, 0x0d, 0x48, 0xe8, 0xc4, 0x84, 0xd5,
-	0x59, 0xf4, 0x0d, 0x06, 0x86, 0x7b, 0x95, 0xe4, 0x03, 0xf9, 0x85, 0x95, 0x29, 0xe9, 0x31, 0x1d,
-	0xd2, 0x87, 0x30, 0x38, 0x26, 0xfb, 0x03, 0x1a, 0x15, 0x8f, 0xd9, 0xa4, 0x25, 0xde, 0xef, 0x88,
-	0xd3, 0x76, 0x77, 0xff, 0xeb, 0xf4, 0x33, 0xb8, 0x87, 0xb9, 0x12, 0x1c, 0x65, 0xd0, 0x0b, 0x49,
-	0xec, 0x2e, 0xc1, 0x7c, 0x64, 0x55, 0x1a, 0x28, 0x5a, 0xc1, 0xfd, 0xf7, 0x45, 0x96, 0x71, 0xd5,
-	0xcc, 0x7e, 0x75, 0x84, 0x27, 0x30, 0xd2, 0x84, 0xea, 0x3b, 0xb7, 0xd6, 0x11, 0x2b, 0x50, 0xad,
-	0xd3, 0xe5, 0x9f, 0x1e, 0xc0, 0xbb, 0x92, 0x6f, 0xec, 0x21, 0xd2, 0x39, 0xf4, 0xf5, 0x41, 0x50,
-	0xdf, 0x14, 0x6b, 0x1d, 0xe2, 0xec, 0xae, 0xf5, 0x52, 0xcf, 0x30, 0x87, 0xa1, 0x5d, 0x3a, 0xa5,
-	0x06, 0x3c, 0xbb, 0x80, 0xd9, 0xf9, 0x50, 0xf4, 0x25, 0x8c, 0x4f, 0x4b, 0xa6, 0x8f, 0x0c, 0xd6,
-	0x5d, 0x7a, 0x97, 0xb2, 0x02, 0xef, 0xe4, 0x1c, 0x47, 0x49, 0xa7, 0x06, 0xbe, 0x58, 0xf5, 0xec,
-	0xf1, 0xc5, 0x7b, 0x2d, 0xf0, 0x1c, 0xc6, 0x1b, 0xcc, 0x53, 0xbb, 0xdb, 0x96, 0x7f, 0x97, 0xbd,
-	0xb9, 0x2d, 0x17, 0xe9, 0x03, 0x83, 0x9e, 0xfb, 0xda, 0xa1, 0x6c, 0x87, 0xe6, 0x97, 0x7d, 0xf5,
-	0x37, 0x00, 0x00, 0xff, 0xff, 0x54, 0x16, 0xda, 0xc1, 0xc3, 0x03, 0x00, 0x00,
+	// 461 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xd1, 0x6e, 0xd3, 0x30,
+	0x14, 0x86, 0xe5, 0x65, 0xeb, 0xba, 0x93, 0x14, 0x36, 0x03, 0x23, 0x74, 0x5c, 0x84, 0xc0, 0x45,
+	0x25, 0xa0, 0x17, 0xf0, 0x04, 0x08, 0x15, 0x14, 0x69, 0x57, 0x1e, 0xe2, 0xb6, 0x32, 0xf1, 0x69,
+	0xb1, 0x94, 0xda, 0xc6, 0x76, 0x27, 0x9e, 0x82, 0xc7, 0xe2, 0x9a, 0xb7, 0xe0, 0x35, 0x50, 0x9c,
+	0x34, 0xa4, 0x5d, 0x84, 0xb8, 0xb3, 0xff, 0xf3, 0xcb, 0xe7, 0xff, 0x7c, 0x6c, 0x98, 0x38, 0xb4,
+	0xb7, 0xb2, 0xc4, 0xb9, 0xb1, 0xda, 0x6b, 0x1a, 0x71, 0x23, 0xf3, 0x1f, 0x04, 0xe2, 0xcf, 0xda,
+	0x23, 0xc3, 0x6f, 0x5b, 0x74, 0x9e, 0x52, 0x38, 0xf6, 0x68, 0x37, 0x29, 0xc9, 0xc8, 0xec, 0x84,
+	0x85, 0x35, 0x7d, 0x06, 0x49, 0xc9, 0x95, 0x90, 0x82, 0x7b, 0x5c, 0x4a, 0x91, 0x1e, 0x65, 0x64,
+	0x76, 0xc6, 0xe2, 0x4e, 0x2b, 0x04, 0x7d, 0x01, 0xf7, 0x2a, 0xee, 0xfc, 0xb2, 0xd2, 0xeb, 0xa5,
+	0x54, 0x02, 0xbf, 0xa7, 0x51, 0x46, 0x66, 0x11, 0x4b, 0x6a, 0xf5, 0x5a, 0xaf, 0x8b, 0x5a, 0xa3,
+	0x39, 0x4c, 0x3a, 0x57, 0xe8, 0x72, 0x1c, 0xba, 0xc4, 0xad, 0xe9, 0x13, 0xda, 0x4d, 0xbe, 0x80,
+	0xa4, 0xc9, 0xe3, 0x8c, 0x56, 0x0e, 0xbb, 0x40, 0x47, 0xfb, 0x81, 0x6e, 0xb5, 0xc7, 0xe5, 0xda,
+	0x72, 0xe5, 0x51, 0x84, 0x5e, 0x63, 0x16, 0xd7, 0xda, 0xc7, 0x46, 0xca, 0x7f, 0x12, 0x78, 0xf8,
+	0xce, 0x18, 0x54, 0x62, 0xa1, 0xbc, 0x95, 0xe8, 0xfe, 0x05, 0x78, 0x05, 0x67, 0x15, 0x72, 0x81,
+	0xf6, 0x2f, 0xdd, 0xb8, 0x11, 0x0a, 0x51, 0x87, 0x36, 0x16, 0xef, 0x90, 0xc5, 0xc6, 0x62, 0x07,
+	0x96, 0x41, 0xb2, 0xf3, 0x74, 0x5c, 0x11, 0x83, 0xc6, 0x52, 0x63, 0xd1, 0xe7, 0x30, 0x69, 0x5b,
+	0x94, 0x7a, 0xb3, 0x91, 0x3e, 0x3d, 0x69, 0xef, 0x27, 0x88, 0xef, 0x83, 0x56, 0x67, 0x13, 0xdc,
+	0xf3, 0x74, 0x94, 0x91, 0x59, 0xc2, 0xc2, 0x3a, 0xff, 0x4d, 0xe0, 0xb2, 0x50, 0xce, 0xf3, 0xaa,
+	0xba, 0x51, 0xdc, 0xb8, 0xaf, 0xda, 0x0f, 0xa1, 0x44, 0xff, 0x83, 0x32, 0x87, 0x07, 0xe1, 0xfe,
+	0xa5, 0x2a, 0xab, 0xad, 0x40, 0xb1, 0x07, 0x74, 0x51, 0x97, 0x8a, 0xb6, 0xd2, 0x60, 0xbd, 0x02,
+	0xba, 0xef, 0xef, 0xc1, 0x9d, 0xf7, 0xed, 0x01, 0xf1, 0x12, 0x46, 0x7a, 0xb5, 0x72, 0xb8, 0x63,
+	0x6b, 0x77, 0x43, 0x54, 0x41, 0xd3, 0x0a, 0xd3, 0xd3, 0x30, 0xb9, 0xb0, 0xce, 0x5f, 0xc3, 0xe3,
+	0x3b, 0xa0, 0x07, 0x8f, 0xa0, 0x47, 0x9a, 0x2f, 0xe0, 0xd1, 0xc1, 0x80, 0x07, 0xcc, 0xbb, 0x09,
+	0xa7, 0x70, 0xea, 0xb6, 0x65, 0x89, 0xce, 0x85, 0x4b, 0x19, 0xb3, 0xdd, 0xf6, 0xcd, 0x2f, 0x02,
+	0x31, 0xe3, 0x2b, 0x7f, 0xd3, 0xfc, 0x0d, 0xfa, 0x12, 0x8e, 0xeb, 0xf7, 0x47, 0xcf, 0xe7, 0xdc,
+	0xc8, 0x79, 0xef, 0x6b, 0x4c, 0x2f, 0x7a, 0x4a, 0xdb, 0xea, 0x03, 0x4c, 0xf6, 0x32, 0xd0, 0x27,
+	0xc1, 0x33, 0xf4, 0xf0, 0xa6, 0xd3, 0xa1, 0x52, 0x7b, 0xce, 0x35, 0xdc, 0x3f, 0x40, 0xa7, 0x57,
+	0xc1, 0x3e, 0x3c, 0xf9, 0xe9, 0xd3, 0xe1, 0x62, 0x73, 0xda, 0x97, 0x51, 0xf8, 0xdf, 0x6f, 0xff,
+	0x04, 0x00, 0x00, 0xff, 0xff, 0x5f, 0x43, 0x57, 0x60, 0xf0, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -519,256 +442,150 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// ApiServiceClient is the client API for ApiService service.
+// RaftServiceClient is the client API for RaftService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type ApiServiceClient interface {
+type RaftServiceClient interface {
 	// 定义方法
 	Vote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error)
 	// 定义方法
-	Leader(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*Response, error)
-	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*Response, error)
-	FetchEntries(ctx context.Context, in *FetchEntryRequest, opts ...grpc.CallOption) (*FetchEntryResponse, error)
-	SendEntry(ctx context.Context, in *Entry, opts ...grpc.CallOption) (*Response, error)
-	CommitEntry(ctx context.Context, in *CommitEntryReq, opts ...grpc.CallOption) (*Response, error)
+	AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error)
+	// 安装快照
+	InstallSnapshot(ctx context.Context, in *InstallSnapshotRequest, opts ...grpc.CallOption) (*InstallSnapshotResponse, error)
 }
 
-type apiServiceClient struct {
+type raftServiceClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewApiServiceClient(cc *grpc.ClientConn) ApiServiceClient {
-	return &apiServiceClient{cc}
+func NewRaftServiceClient(cc *grpc.ClientConn) RaftServiceClient {
+	return &raftServiceClient{cc}
 }
 
-func (c *apiServiceClient) Vote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error) {
+func (c *raftServiceClient) Vote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error) {
 	out := new(VoteResponse)
-	err := c.cc.Invoke(ctx, "/api.ApiService/Vote", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/api.RaftService/Vote", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *apiServiceClient) Leader(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/api.ApiService/Leader", in, out, opts...)
+func (c *raftServiceClient) AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error) {
+	out := new(AppendEntriesResponse)
+	err := c.cc.Invoke(ctx, "/api.RaftService/AppendEntries", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *apiServiceClient) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/api.ApiService/Heartbeat", in, out, opts...)
+func (c *raftServiceClient) InstallSnapshot(ctx context.Context, in *InstallSnapshotRequest, opts ...grpc.CallOption) (*InstallSnapshotResponse, error) {
+	out := new(InstallSnapshotResponse)
+	err := c.cc.Invoke(ctx, "/api.RaftService/InstallSnapshot", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *apiServiceClient) FetchEntries(ctx context.Context, in *FetchEntryRequest, opts ...grpc.CallOption) (*FetchEntryResponse, error) {
-	out := new(FetchEntryResponse)
-	err := c.cc.Invoke(ctx, "/api.ApiService/FetchEntries", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *apiServiceClient) SendEntry(ctx context.Context, in *Entry, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/api.ApiService/SendEntry", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *apiServiceClient) CommitEntry(ctx context.Context, in *CommitEntryReq, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/api.ApiService/CommitEntry", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ApiServiceServer is the server API for ApiService service.
-type ApiServiceServer interface {
+// RaftServiceServer is the server API for RaftService service.
+type RaftServiceServer interface {
 	// 定义方法
 	Vote(context.Context, *VoteRequest) (*VoteResponse, error)
 	// 定义方法
-	Leader(context.Context, *LeaderRequest) (*Response, error)
-	Heartbeat(context.Context, *HeartbeatRequest) (*Response, error)
-	FetchEntries(context.Context, *FetchEntryRequest) (*FetchEntryResponse, error)
-	SendEntry(context.Context, *Entry) (*Response, error)
-	CommitEntry(context.Context, *CommitEntryReq) (*Response, error)
+	AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error)
+	// 安装快照
+	InstallSnapshot(context.Context, *InstallSnapshotRequest) (*InstallSnapshotResponse, error)
 }
 
-// UnimplementedApiServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedApiServiceServer struct {
+// UnimplementedRaftServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedRaftServiceServer struct {
 }
 
-func (*UnimplementedApiServiceServer) Vote(ctx context.Context, req *VoteRequest) (*VoteResponse, error) {
+func (*UnimplementedRaftServiceServer) Vote(ctx context.Context, req *VoteRequest) (*VoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Vote not implemented")
 }
-func (*UnimplementedApiServiceServer) Leader(ctx context.Context, req *LeaderRequest) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Leader not implemented")
+func (*UnimplementedRaftServiceServer) AppendEntries(ctx context.Context, req *AppendEntriesRequest) (*AppendEntriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AppendEntries not implemented")
 }
-func (*UnimplementedApiServiceServer) Heartbeat(ctx context.Context, req *HeartbeatRequest) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
-}
-func (*UnimplementedApiServiceServer) FetchEntries(ctx context.Context, req *FetchEntryRequest) (*FetchEntryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchEntries not implemented")
-}
-func (*UnimplementedApiServiceServer) SendEntry(ctx context.Context, req *Entry) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendEntry not implemented")
-}
-func (*UnimplementedApiServiceServer) CommitEntry(ctx context.Context, req *CommitEntryReq) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CommitEntry not implemented")
+func (*UnimplementedRaftServiceServer) InstallSnapshot(ctx context.Context, req *InstallSnapshotRequest) (*InstallSnapshotResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InstallSnapshot not implemented")
 }
 
-func RegisterApiServiceServer(s *grpc.Server, srv ApiServiceServer) {
-	s.RegisterService(&_ApiService_serviceDesc, srv)
+func RegisterRaftServiceServer(s *grpc.Server, srv RaftServiceServer) {
+	s.RegisterService(&_RaftService_serviceDesc, srv)
 }
 
-func _ApiService_Vote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RaftService_Vote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VoteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiServiceServer).Vote(ctx, in)
+		return srv.(RaftServiceServer).Vote(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.ApiService/Vote",
+		FullMethod: "/api.RaftService/Vote",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).Vote(ctx, req.(*VoteRequest))
+		return srv.(RaftServiceServer).Vote(ctx, req.(*VoteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApiService_Leader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LeaderRequest)
+func _RaftService_AppendEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendEntriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiServiceServer).Leader(ctx, in)
+		return srv.(RaftServiceServer).AppendEntries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.ApiService/Leader",
+		FullMethod: "/api.RaftService/AppendEntries",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).Leader(ctx, req.(*LeaderRequest))
+		return srv.(RaftServiceServer).AppendEntries(ctx, req.(*AppendEntriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApiService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HeartbeatRequest)
+func _RaftService_InstallSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallSnapshotRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiServiceServer).Heartbeat(ctx, in)
+		return srv.(RaftServiceServer).InstallSnapshot(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.ApiService/Heartbeat",
+		FullMethod: "/api.RaftService/InstallSnapshot",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).Heartbeat(ctx, req.(*HeartbeatRequest))
+		return srv.(RaftServiceServer).InstallSnapshot(ctx, req.(*InstallSnapshotRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApiService_FetchEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchEntryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApiServiceServer).FetchEntries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.ApiService/FetchEntries",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).FetchEntries(ctx, req.(*FetchEntryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ApiService_SendEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Entry)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApiServiceServer).SendEntry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.ApiService/SendEntry",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).SendEntry(ctx, req.(*Entry))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ApiService_CommitEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CommitEntryReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApiServiceServer).CommitEntry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.ApiService/CommitEntry",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServiceServer).CommitEntry(ctx, req.(*CommitEntryReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _ApiService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "api.ApiService",
-	HandlerType: (*ApiServiceServer)(nil),
+var _RaftService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "api.RaftService",
+	HandlerType: (*RaftServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Vote",
-			Handler:    _ApiService_Vote_Handler,
+			Handler:    _RaftService_Vote_Handler,
 		},
 		{
-			MethodName: "Leader",
-			Handler:    _ApiService_Leader_Handler,
+			MethodName: "AppendEntries",
+			Handler:    _RaftService_AppendEntries_Handler,
 		},
 		{
-			MethodName: "Heartbeat",
-			Handler:    _ApiService_Heartbeat_Handler,
-		},
-		{
-			MethodName: "FetchEntries",
-			Handler:    _ApiService_FetchEntries_Handler,
-		},
-		{
-			MethodName: "SendEntry",
-			Handler:    _ApiService_SendEntry_Handler,
-		},
-		{
-			MethodName: "CommitEntry",
-			Handler:    _ApiService_CommitEntry_Handler,
+			MethodName: "InstallSnapshot",
+			Handler:    _RaftService_InstallSnapshot_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
