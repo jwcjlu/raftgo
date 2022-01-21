@@ -3,52 +3,50 @@ package raft
 import (
 	"context"
 	"fmt"
-	"github.com/raftgo/config"
+	"github.com/jwcjlu/raftgo/config"
+	"google.golang.org/grpc"
 	"net"
 
-	"google.golang.org/grpc"
-
-	"github.com/raftgo/api"
+	"github.com/jwcjlu/raftgo/api"
 )
 
-type Server struct {
-	raft Raft
+func NewRaftService(raft *Raft, conf *config.Config) api.RaftServiceServer {
+	return &RaftService{raft: raft, conf: conf}
+}
+
+type RaftService struct {
 	conf *config.Config
+	raft *Raft
 }
 
-func NewServer(raft Raft, conf *config.Config) *Server {
-	return &Server{raft: raft, conf: conf}
+func (r *RaftService) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
+	r.raft.voteChan <- req
+	rsp := <-r.raft.voteResponseChan
+	return rsp, nil
 }
 
-func (server *Server) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
+// 定义方法
+func (r *RaftService) AppendEntries(ctx context.Context, req *api.AppendEntriesRequest) (*api.AppendEntriesResponse, error) {
+	r.raft.appendEntryChan <- req
+	rsp := <-r.raft.appendEntryResponseChan
+	return rsp, nil
 
-	return server.raft.VoteFor(ctx, req)
 }
-func (server *Server) Leader(ctx context.Context, req *api.LeaderRequest) (*api.Response, error) {
-	return server.raft.Leader(ctx, req)
-}
-func (server *Server) Heartbeat(ctx context.Context, req *api.HeartbeatRequest) (*api.Response, error) {
-	return server.raft.Heartbeat(ctx, req)
-}
-func (server *Server) FetchEntries(ctx context.Context, req *api.FetchEntryRequest) (*api.FetchEntryResponse, error) {
-	return server.raft.FetchEntries(ctx, req)
-}
-func (server *Server) SendEntry(ctx context.Context, req *api.Entry) (*api.Response, error) {
-	return server.raft.SendEntry(ctx, req)
-}
-func (server *Server) CommitEntry(ctx context.Context, req *api.CommitEntryReq) (*api.Response, error) {
-	return server.raft.CommitEntry(ctx, req)
+
+// 安装快照
+func (r *RaftService) InstallSnapshot(ctx context.Context, req *api.InstallSnapshotRequest) (*api.InstallSnapshotResponse, error) {
+	return nil, nil
 }
 
 type ServiceManager struct {
-	Server *Server
+	Server *RaftService
 }
 
-func NewServiceManager(server *Server) *ServiceManager {
+func NewServiceManager(server *RaftService) *ServiceManager {
 	return &ServiceManager{Server: server}
 }
 func (manager ServiceManager) RegisterService(server *grpc.Server) {
-	api.RegisterApiServiceServer(server, manager.Server)
+	api.RegisterRaftServiceServer(server, manager.Server)
 }
 
 func (manager *ServiceManager) Start() (net.Listener, error) {

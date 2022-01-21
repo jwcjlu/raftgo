@@ -1,6 +1,6 @@
 package raft
 
-import "github.com/raftgo/config"
+import "github.com/jwcjlu/raftgo/config"
 
 type LifeCycle interface {
 	Init(conf *config.Config)
