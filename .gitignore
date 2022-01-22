@@ -17,7 +17,6 @@ member
 
 # GoLand IDE
 .idea/
-
 # vscode
 .vscode/
 
@@ -27,7 +26,5 @@ dist/
 # golang build cache for docker
 build/cache
 build/bin
-
-easegress.pid
-
+go.sum
 *.exe
