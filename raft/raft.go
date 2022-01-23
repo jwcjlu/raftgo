@@ -3,19 +3,15 @@ package raft
 import (
 	"context"
 	"fmt"
-	"io"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/jwcjlu/raftgo/api"
 	"github.com/jwcjlu/raftgo/config"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/jwcjlu/raftgo/api"
 )
 
 //--------------------------------------
@@ -71,24 +67,17 @@ func (r *Raft) Init(conf *config.Config) {
 	r.mu = sync.RWMutex{}
 	r.ip = conf.Node.Ip
 	r.port = conf.Node.Port
-	r.appendEntryResponseChan=make(chan *api.AppendEntriesResponse,1)
-	r.appendEntryChan=make(chan *api.AppendEntriesRequest,1)
+	r.appendEntryResponseChan = make(chan *api.AppendEntriesResponse, 1)
+	r.appendEntryChan = make(chan *api.AppendEntriesRequest, 1)
 	for _, ipPort := range conf.Cluster.Nodes {
 		ipPorts := strings.Split(ipPort, ":")
 		port, _ := strconv.Atoi(ipPorts[1])
-		r.custer = append(r.custer, &Node{
+		node := &Node{
 			Ip:    ipPorts[0],
 			Port:  port,
-			State: 0,
-			pool: Pool{factory: func() (io.Closer, error) {
-				conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ipPorts[0], port),
-					grpc.WithTransportCredentials(insecure.NewCredentials()))
-				if err != nil {
-					return nil, err
-				}
-				return conn, nil
-			}},
-		})
+			State: 0}
+		node.Init()
+		r.custer = append(r.custer, node)
 	}
 
 }
@@ -149,12 +138,12 @@ func (r *Raft) HandleVote(request *api.VoteRequest) (*api.VoteResponse, error) {
 
 func (r *Raft) runFollower() {
 	timeoutCh := randomTimeout(time.Second * 2)
-	lastTime:=time.Now()
+	lastTime := time.Now()
 	for r.state == Follower {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runFollower")
 		select {
 		case req := <-r.appendEntryChan:
-			lastTime=time.Now()
+			lastTime = time.Now()
 			rsp := &api.AppendEntriesResponse{Term: r.term, Success: false}
 			if req.Term > r.term {
 				r.state = Follower

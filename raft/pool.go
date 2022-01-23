@@ -2,7 +2,6 @@ package raft
 
 import (
 	"errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"sync"
 	"time"
@@ -16,12 +15,12 @@ type Pool struct {
 	closed    bool
 }
 
-var ErrPoolClosed = errors.New("Pool has been closed")
+var ErrPoolClosed = errors.New("pool has been closed")
 
 // New 函数工厂，指定有缓冲通道大小
 func New(fn func() (io.Closer, error), size uint) (*Pool, error) {
 	if size <= 0 {
-		return nil, errors.New("Size value negative")
+		return nil, errors.New("size value negative")
 	}
 	return &Pool{
 		factory:   fn,
@@ -34,13 +33,11 @@ func (p *Pool) Acquire(ms time.Duration) (io.Closer, error) {
 	timeout := time.After(ms)
 	select {
 	case r, ok := <-p.resources:
-		logrus.Error("Acquire: Shared Resource")
 		if !ok {
 			return nil, ErrPoolClosed
 		}
 		return r, nil
 	case <-timeout:
-		logrus.Error("Acquire: New Resource")
 		return p.factory()
 	}
 }
@@ -57,9 +54,7 @@ func (p *Pool) Release(r io.Closer) {
 
 	select {
 	case p.resources <- r: //放入队列
-		logrus.Println("Release: In Queue")
 	default: //队列已满,则关闭
-		logrus.Println("Release: Closing")
 		r.Close()
 	}
 }
