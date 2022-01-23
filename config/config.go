@@ -9,11 +9,12 @@ import (
 
 type Config struct {
 	Node struct {
-		Ip      string
-		Port    int
-		Id      string
-		Timeout int
-		ApiPort int `yaml:"api_port"`
+		Ip        string
+		Port      int
+		Id        string
+		Timeout   int
+		ApiPort   int `yaml:"api_port"`
+		ConnCount int
 	}
 	Cluster struct {
 		Nodes []string

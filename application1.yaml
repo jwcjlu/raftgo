@@ -3,6 +3,7 @@ node:
   port: 2191
   id: 2
   timeout: 2000
+  conn_count: 3
   api_port: 8001
 cluster:
   nodes:

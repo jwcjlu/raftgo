@@ -30,14 +30,14 @@ type Node struct {
 	pool  Pool
 }
 
-func (node *Node) Init() {
+func (node *Node) Init(connCount int) {
 	node.pool = Pool{factory: func() (io.Closer, error) {
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Ip, node.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}
 		return conn, nil
-	}, resources: make(chan io.Closer, 3)}
+	}, resources: make(chan io.Closer, connCount)}
 }
 func (node *Node) Vote(ctx context.Context, request *api.VoteRequest) (*api.VoteResponse, error) {
 	conn, err := node.getConn()

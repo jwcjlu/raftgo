@@ -76,7 +76,7 @@ func (r *Raft) Init(conf *config.Config) {
 			Ip:    ipPorts[0],
 			Port:  port,
 			State: 0}
-		node.Init()
+		node.Init(conf.Node.ConnCount)
 		r.custer = append(r.custer, node)
 	}
 
