@@ -11,7 +11,7 @@ rootfs/ubuntu/opt
 log
 data
 member
-
+go.sum
 # MacOS stuff.
 .DS_Store
 
