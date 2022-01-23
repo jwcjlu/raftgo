@@ -3,13 +3,14 @@ package raft
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"time"
 
 	"github.com/jwcjlu/raftgo/api"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type StateEnum int
@@ -23,11 +24,14 @@ const (
 )
 
 type Node struct {
-	Id    string
-	Ip    string
-	Port  int
-	State StateEnum
-	pool  Pool
+	Id         string
+	Ip         string
+	Port       int
+	pool       Pool
+	raft       *Raft
+	term       int64
+	nextIndex  int64
+	matchIndex int64
 }
 
 func (node *Node) Init(connCount int) {
@@ -85,7 +89,6 @@ func (node *Node) AppendEntries(ctx context.Context,
 	}
 	return rsp, nil
 }
-
 func (node *Node) getConn() (*grpc.ClientConn, error) {
 	closer, err := node.pool.Acquire(100 * time.Millisecond)
 	if err != nil {
@@ -98,4 +101,8 @@ func (node *Node) getConn() (*grpc.ClientConn, error) {
 
 func (node *Node) Close() {
 	node.pool.Close()
+}
+
+func (node *Node) startReplicate() {
+
 }

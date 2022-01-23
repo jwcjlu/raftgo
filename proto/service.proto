@@ -43,7 +43,12 @@ message AppendEntriesResponse {
     int32 term = 1;
     bool success = 2;
 }
-
+// LogEntry 日志的对象
+message LogEntry {
+    int64 currentTerm = 1;
+    int64 index = 2;
+    bytes data = 3;
+}
 // 定义服务主体
 service RaftService {
     // 定义方法

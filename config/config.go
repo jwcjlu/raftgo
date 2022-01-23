@@ -15,6 +15,7 @@ type Config struct {
 		Timeout   int
 		ApiPort   int `yaml:"api_port"`
 		ConnCount int
+		LogDir    string
 	}
 	Cluster struct {
 		Nodes []string

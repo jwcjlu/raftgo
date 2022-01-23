@@ -5,6 +5,7 @@ node:
   timeout: 2000
   conn_count: 3
   api_port: 8002
+  log_dir: "/tmp/node2"
 cluster:
   nodes:
   - 127.0.0.1:2190

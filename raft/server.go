@@ -20,7 +20,7 @@ type RaftService struct {
 }
 
 func (r *RaftService) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
-	return  r.raft.HandleVote(req)
+	return r.raft.HandlerVote(req)
 }
 
 // 定义方法

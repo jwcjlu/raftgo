@@ -47,7 +47,8 @@ type Raft struct {
 	voteResponseChan        chan *api.VoteResponse
 	appendEntryResponseChan chan *api.AppendEntriesResponse
 	LifeCycle
-	mu sync.RWMutex
+	mu  sync.RWMutex
+	log Log
 }
 
 func (r *Raft) Start() {
@@ -73,11 +74,16 @@ func (r *Raft) Init(conf *config.Config) {
 		ipPorts := strings.Split(ipPort, ":")
 		port, _ := strconv.Atoi(ipPorts[1])
 		node := &Node{
-			Ip:    ipPorts[0],
-			Port:  port,
-			State: 0}
+			Ip:   ipPorts[0],
+			Port: port}
+		node.raft = r
 		node.Init(conf.Node.ConnCount)
 		r.custer = append(r.custer, node)
+	}
+	r.log = Log{}
+	err := r.log.Init(conf)
+	if err != nil {
+		logrus.Fatal("log file open error =", err)
 	}
 
 }
@@ -128,7 +134,7 @@ func (r *Raft) runLeader() {
 	}
 }
 
-func (r *Raft) HandleVote(request *api.VoteRequest) (*api.VoteResponse, error) {
+func (r *Raft) HandlerVote(request *api.VoteRequest) (*api.VoteResponse, error) {
 	rsp := api.VoteResponse{Term: r.term, VoteGranted: false}
 	if request.Term > r.term {
 		rsp.VoteGranted = true
