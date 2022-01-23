@@ -10,7 +10,7 @@ import (
 	"github.com/jwcjlu/raftgo/api"
 )
 
-func NewRaftService(raft *Raft, conf *config.Config) api.RaftServiceServer {
+func NewRaftService(raft *Raft, conf *config.Config) *RaftService {
 	return &RaftService{raft: raft, conf: conf}
 }
 
@@ -20,9 +20,7 @@ type RaftService struct {
 }
 
 func (r *RaftService) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
-	r.raft.voteChan <- req
-	rsp := <-r.raft.voteResponseChan
-	return rsp, nil
+	return  r.raft.HandleVote(req)
 }
 
 // 定义方法
