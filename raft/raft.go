@@ -42,14 +42,16 @@ type Raft struct {
 	commitIndex             int64
 	custer                  []*Node
 	state                   StateEnum
-	voteChan                chan *api.VoteRequest
 	appendEntryChan         chan *api.AppendEntriesRequest
-	voteResponseChan        chan *api.VoteResponse
 	appendEntryResponseChan chan *api.AppendEntriesResponse
+	appliedEntryChan        chan *api.LogEntry
+	appliedEntryResp        chan *api.LogEntry
 	LifeCycle
 	mu  sync.RWMutex
 	log Log
 }
+
+var timeout = 3
 
 func (r *Raft) Start() {
 	r.state = Follower
@@ -143,7 +145,7 @@ func (r *Raft) HandlerVote(request *api.VoteRequest) (*api.VoteResponse, error) 
 }
 
 func (r *Raft) runFollower() {
-	timeoutCh := randomTimeout(time.Second * 2)
+	timeoutCh := randomTimeout(time.Second * 3)
 	lastTime := time.Now()
 	for r.state == Follower {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runFollower")
@@ -160,8 +162,8 @@ func (r *Raft) runFollower() {
 			r.appendEntryResponseChan <- rsp
 
 		case <-timeoutCh:
-			timeoutCh = randomTimeout(time.Second * 2)
-			if time.Now().Sub(lastTime).Seconds() < 2*time.Second.Seconds() {
+			timeoutCh = randomTimeout(time.Second * 3)
+			if time.Now().Sub(lastTime).Seconds() < 3*time.Second.Seconds() {
 				continue
 			}
 			r.state = Candidate
@@ -171,15 +173,15 @@ func (r *Raft) runFollower() {
 }
 
 func (r *Raft) runCandidate() {
-	timeoutCh := randomTimeout(time.Second * 2)
+	timeoutCh := randomTimeout(time.Second * 3)
 	isVote := true
 	for r.state == Candidate {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runCandidate term=%d", r.term)
 		select {
 		case req := <-r.appendEntryChan:
-			timeoutCh = randomTimeout(time.Second * 2)
+			timeoutCh = randomTimeout(time.Second * 3)
 			rsp := &api.AppendEntriesResponse{Term: r.term, Success: false}
-			if req.Term > r.term {
+			if req.Term >= r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
@@ -188,7 +190,7 @@ func (r *Raft) runCandidate() {
 			r.appendEntryResponseChan <- rsp
 		case <-timeoutCh:
 			if !isVote {
-				timeoutCh = randomTimeout(time.Second * 2)
+				timeoutCh = randomTimeout(time.Second * 3)
 				continue
 			}
 			isVote = false
@@ -221,7 +223,7 @@ func (r *Raft) runCandidate() {
 			if voteGranted >= r.QuorumSize() {
 				r.state = Leader
 			}
-			timeoutCh = randomTimeout(time.Second * 2)
+			timeoutCh = randomTimeout(time.Second * 3)
 			isVote = true
 		}
 	}

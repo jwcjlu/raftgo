@@ -3,6 +3,7 @@ package raft
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/connectivity"
 	"io"
 	"time"
 
@@ -48,16 +49,8 @@ func (node *Node) Vote(ctx context.Context, request *api.VoteRequest) (*api.Vote
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer func() {
-		cancel()
-		if err != nil && conn != nil {
-			conn.Close()
-		}
-		if conn != nil {
-			node.pool.Release(conn)
-		}
-	}()
+	ctx, deferFun := node.withDeferFunc(ctx, 500*time.Millisecond)
+	defer deferFun(conn, err)
 	rsp, err := api.NewRaftServiceClient(conn).Vote(ctx, request)
 	if err != nil {
 		logrus.Error(err)
@@ -72,16 +65,8 @@ func (node *Node) AppendEntries(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-	defer func() {
-		cancel()
-		if err != nil && conn != nil {
-			conn.Close()
-		}
-		if conn != nil {
-			node.pool.Release(conn)
-		}
-	}()
+	ctx, deferFun := node.withDeferFunc(ctx, 500*time.Millisecond)
+	defer deferFun(conn, err)
 	rsp, err := api.NewRaftServiceClient(conn).AppendEntries(ctx, request)
 	if err != nil {
 		logrus.Error(err)
@@ -96,6 +81,19 @@ func (node *Node) getConn() (*grpc.ClientConn, error) {
 	}
 	conn, _ := closer.(*grpc.ClientConn)
 	return conn, nil
+
+}
+func (node *Node) withDeferFunc(ctx context.Context, timeout time.Duration) (context.Context, func(*grpc.ClientConn, error)) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	return ctx, func(conn *grpc.ClientConn, err error) {
+		cancel()
+		if err != nil && conn != nil {
+			conn.Close()
+		}
+		if conn != nil && conn.GetState() != connectivity.Shutdown {
+			node.pool.Release(conn)
+		}
+	}
 
 }
 
