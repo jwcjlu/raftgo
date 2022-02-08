@@ -115,19 +115,22 @@ func (r *Raft) runLeader() {
 			if req.Term > r.term {
 				r.state = Follower
 				r.isLeader = false
-				r.leaderId = req.LeaderId
 				rsp.Success = true
 			}
 			r.appendEntryResponseChan <- rsp
 		case <-timeoutCh:
 			for _, n := range r.custer {
 				go func(node *Node) {
-					_, err := node.AppendEntries(context.Background(), &api.AppendEntriesRequest{
+					rsp, err := node.AppendEntries(context.Background(), &api.AppendEntriesRequest{
 						Term:     r.term,
 						LeaderId: r.leaderId,
 					})
 					if err != nil {
 						logrus.Error(err)
+					}
+					if rsp.Term > r.term {
+						r.state = Follower
+						r.isLeader = false
 					}
 				}(n)
 			}
