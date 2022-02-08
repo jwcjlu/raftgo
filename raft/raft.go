@@ -127,6 +127,7 @@ func (r *Raft) runLeader() {
 					})
 					if err != nil {
 						logrus.Error(err)
+						return
 					}
 					if rsp.Term > r.term {
 						r.state = Follower
