@@ -50,7 +50,6 @@ func (log *Log) Init(config *config.Config) error {
 		}
 		readBytes += n
 		log.data = append(log.data, entry)
-
 	}
 	return nil
 }
@@ -93,4 +92,10 @@ func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
 	var entry api.LogEntry
 	err = proto.Unmarshal(data, &entry)
 	return &entry, int64(length + 8), err
+}
+func (log *Log) LastEntry() *api.LogEntry {
+	if len(log.data) < 1 {
+		return &api.LogEntry{}
+	}
+	return log.data[len(log.data)-1]
 }

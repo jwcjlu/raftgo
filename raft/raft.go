@@ -36,10 +36,11 @@ type Raft struct {
 	leaderId                string
 	ip                      string
 	port                    int
-	term                    int32
+	term                    int64
 	isLeader                bool
 	lastApplied             int64
 	commitIndex             int64
+	index                   int64
 	custer                  []*Node
 	state                   StateEnum
 	appendEntryChan         chan *api.AppendEntriesRequest
@@ -47,8 +48,9 @@ type Raft struct {
 	appliedEntryChan        chan *api.LogEntry
 	appliedEntryResp        chan *api.LogEntry
 	LifeCycle
-	mu  sync.RWMutex
-	log *Log
+	mu    sync.RWMutex
+	cmdCh chan []byte
+	log   *Log
 }
 
 var timeout = 3
@@ -72,6 +74,7 @@ func (r *Raft) Init(conf *config.Config) {
 	r.port = conf.Node.Port
 	r.appendEntryResponseChan = make(chan *api.AppendEntriesResponse, 1)
 	r.appendEntryChan = make(chan *api.AppendEntriesRequest, 1)
+	r.cmdCh = make(chan []byte, 1)
 	for _, ipPort := range conf.Cluster.Nodes {
 		ipPorts := strings.Split(ipPort, ":")
 		port, _ := strconv.Atoi(ipPorts[1])
@@ -87,6 +90,9 @@ func (r *Raft) Init(conf *config.Config) {
 	if err != nil {
 		logrus.Fatal("log file open error =", err)
 	}
+	entry := r.log.LastEntry()
+	r.term = entry.CurrentTerm
+	r.lastApplied = entry.Index
 
 }
 
@@ -136,6 +142,17 @@ func (r *Raft) runLeader() {
 				}(n)
 			}
 			timeoutCh = randomTimeout(time.Millisecond * 800)
+			/*	case cmd := <-r.cmdCh:
+				{
+					req := api.AppendEntriesRequest{
+						Term:        r.term,
+						LeaderId:    r.leaderId,
+						PreLogIndex: 0,
+						PreLogTerm:  r.,
+						LeaderCommit:         0,
+						Data:                 cmd,
+					}
+				}*/
 		}
 	}
 }
@@ -203,7 +220,7 @@ func (r *Raft) runCandidate() {
 			wg := sync.WaitGroup{}
 			wg.Add(len(r.custer))
 			for _, n := range r.custer {
-				go func(node *Node, term int32) {
+				go func(node *Node, term int64) {
 					defer wg.Done()
 					rsp, err := node.Vote(context.Background(), &api.VoteRequest{
 						Term:         term,

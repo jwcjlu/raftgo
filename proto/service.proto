@@ -5,24 +5,24 @@ package api;
 
 //VoteRequest 投票的请求
 message VoteRequest {
-    int32 term = 1;
+    int64 term = 1;
     string candidate_id = 2;
     int64 last_log_index = 3;
     int32 last_log_term = 4;
 }
 //VoteResponse 投票的响应
 message VoteResponse {
-    int32 term = 2;
+    int64 term = 2;
     bool vote_granted = 3;
 }
 
 message AppendEntriesRequest {
-    int32 term = 1;
+    int64 term = 1;
     string leader_id = 2;
     int64 pre_log_index = 3;
     int64 pre_log_term = 4;
     int64 leader_commit = 5;
-    bytes data = 6;
+    LogEntry entry = 6;
 
 }
 
@@ -40,7 +40,7 @@ message InstallSnapshotResponse {
     int64 term = 1;
 }
 message AppendEntriesResponse {
-    int32 term = 1;
+    int64 term = 1;
     bool success = 2;
 }
 // LogEntry 日志的对象
