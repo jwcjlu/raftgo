@@ -48,7 +48,7 @@ type Raft struct {
 	appliedEntryResp        chan *api.LogEntry
 	LifeCycle
 	mu  sync.RWMutex
-	log Log
+	log *Log
 }
 
 var timeout = 3
@@ -82,7 +82,7 @@ func (r *Raft) Init(conf *config.Config) {
 		node.Init(conf.Node.ConnCount)
 		r.custer = append(r.custer, node)
 	}
-	r.log = Log{}
+	r.log = &Log{}
 	err := r.log.Init(conf)
 	if err != nil {
 		logrus.Fatal("log file open error =", err)
