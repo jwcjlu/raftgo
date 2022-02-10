@@ -40,13 +40,13 @@ type Raft struct {
 	isLeader                bool
 	lastApplied             int64
 	commitIndex             int64
+	lastTerm                int64
+	lastIndex               int64
 	index                   int64
 	custer                  []*Node
 	state                   StateEnum
 	appendEntryChan         chan *api.AppendEntriesRequest
 	appendEntryResponseChan chan *api.AppendEntriesResponse
-	appliedEntryChan        chan *api.LogEntry
-	appliedEntryResp        chan *api.LogEntry
 	LifeCycle
 	mu    sync.RWMutex
 	cmdCh chan []byte
@@ -74,7 +74,6 @@ func (r *Raft) Init(conf *config.Config) {
 	r.port = conf.Node.Port
 	r.appendEntryResponseChan = make(chan *api.AppendEntriesResponse, 1)
 	r.appendEntryChan = make(chan *api.AppendEntriesRequest, 1)
-	r.cmdCh = make(chan []byte, 1)
 	for _, ipPort := range conf.Cluster.Nodes {
 		ipPorts := strings.Split(ipPort, ":")
 		port, _ := strconv.Atoi(ipPorts[1])
@@ -93,7 +92,6 @@ func (r *Raft) Init(conf *config.Config) {
 	entry := r.log.LastEntry()
 	r.term = entry.CurrentTerm
 	r.lastApplied = entry.Index
-
 }
 
 func (r *Raft) Run() {
@@ -113,6 +111,7 @@ func (r *Raft) Run() {
 
 func (r *Raft) runLeader() {
 	timeoutCh := randomTimeout(time.Millisecond * 800)
+	go r.startLeader()
 	for r.state == Leader {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runLeader")
 		select {
@@ -142,21 +141,51 @@ func (r *Raft) runLeader() {
 				}(n)
 			}
 			timeoutCh = randomTimeout(time.Millisecond * 800)
-			/*	case cmd := <-r.cmdCh:
-				{
-					req := api.AppendEntriesRequest{
-						Term:        r.term,
-						LeaderId:    r.leaderId,
-						PreLogIndex: 0,
-						PreLogTerm:  r.,
-						LeaderCommit:         0,
-						Data:                 cmd,
-					}
-				}*/
 		}
 	}
 }
 
+func (r *Raft) startLeader() {
+	close(r.cmdCh)
+	r.cmdCh = make(chan []byte, 1)
+	for r.state == Leader {
+		cmd := <-r.cmdCh
+		entry := &api.LogEntry{
+			CurrentTerm: r.term,
+			Index:       r.index + 1,
+			Data:        cmd,
+		}
+		req := api.AppendEntriesRequest{
+			Term:         r.term,
+			LeaderId:     r.leaderId,
+			PreLogIndex:  r.lastIndex,
+			PreLogTerm:   r.lastTerm,
+			LeaderCommit: 0,
+			Entry:        entry,
+		}
+		voteGranted := 1
+		wg := sync.WaitGroup{}
+		wg.Add(len(r.custer))
+		for _, n := range r.custer {
+			go func(node *Node) {
+				defer wg.Done()
+				rsp, err := node.AppendEntries(context.Background(), &req)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+				if rsp.Success {
+					voteGranted++
+				}
+			}(n)
+		}
+		wg.Wait()
+		if voteGranted >= r.QuorumSize() {
+			r.log.ApplyLogEntry(entry)
+		}
+	}
+
+}
 func (r *Raft) HandlerVote(request *api.VoteRequest) (*api.VoteResponse, error) {
 	rsp := api.VoteResponse{Term: r.term, VoteGranted: false}
 	if request.Term > r.term {
