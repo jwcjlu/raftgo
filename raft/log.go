@@ -69,7 +69,7 @@ func (log *Log) encodeEntry(entry *api.LogEntry) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(log.file, "%8x\n", len(data))
+	err = WriteInt(log.file, len(data))
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,7 @@ func (log *Log) encodeEntry(entry *api.LogEntry) error {
 }
 
 func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
-	var length int
-	_, err := fmt.Fscanf(log.file, "%8x\n", &length)
+	length, err := ReadInt(log.file)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -93,5 +92,5 @@ func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
 	}
 	var entry api.LogEntry
 	err = proto.Unmarshal(data, &entry)
-	return &entry, int64(length + 9), err
+	return &entry, int64(length + 8), err
 }
