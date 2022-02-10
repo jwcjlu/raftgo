@@ -91,7 +91,7 @@ func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	var entry *api.LogEntry
-	err = proto.Unmarshal(data, entry)
-	return entry, int64(length + 9), nil
+	var entry api.LogEntry
+	err = proto.Unmarshal(data, &entry)
+	return &entry, int64(length + 9), err
 }
