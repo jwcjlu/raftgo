@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 // 指定等会文件生成出来的package
-package api;
+package proto;
 
 //VoteRequest 投票的请求
 message VoteRequest {
@@ -23,9 +23,19 @@ message AppendEntriesRequest {
     int64 pre_log_term = 4;
     int64 leader_commit = 5;
     LogEntry entry = 6;
+    bool is_apply=7;
 
 }
 
+message HeartbeatRequest {
+    int64 term = 1;
+    string leader_id = 2;
+    int64 leader_commit = 3;
+}
+message HeartbeatResponse {
+    int64 term = 1;
+    bool success = 2;
+}
 message InstallSnapshotRequest {
     int64 term = 1;
     string leader_id = 2;
@@ -51,12 +61,13 @@ message LogEntry {
 }
 // 定义服务主体
 service RaftService {
-    // 定义方法
+    // 投票方法
     rpc Vote (VoteRequest) returns (VoteResponse);
-    // 定义方法
+    // 日志复制
     rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse);
-
     // 安装快照
     rpc InstallSnapshot (InstallSnapshotRequest) returns (InstallSnapshotResponse);
+    //心跳检查
+    rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
 
 }

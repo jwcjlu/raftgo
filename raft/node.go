@@ -3,11 +3,10 @@ package raft
 import (
 	"context"
 	"fmt"
+	"github.com/jwcjlu/raftgo/proto"
 	"google.golang.org/grpc/connectivity"
 	"io"
 	"time"
-
-	"github.com/jwcjlu/raftgo/api"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -44,14 +43,14 @@ func (node *Node) Init(connCount int) {
 		return conn, nil
 	}, resources: make(chan io.Closer, connCount)}
 }
-func (node *Node) Vote(ctx context.Context, request *api.VoteRequest) (*api.VoteResponse, error) {
+func (node *Node) Vote(ctx context.Context, request *proto.VoteRequest) (*proto.VoteResponse, error) {
 	conn, err := node.getConn()
 	if err != nil {
 		return nil, err
 	}
 	ctx, deferFun := node.withDeferFunc(ctx, 500*time.Millisecond)
 	defer deferFun(conn, err)
-	rsp, err := api.NewRaftServiceClient(conn).Vote(ctx, request)
+	rsp, err := proto.NewRaftServiceClient(conn).Vote(ctx, request)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -60,14 +59,29 @@ func (node *Node) Vote(ctx context.Context, request *api.VoteRequest) (*api.Vote
 }
 
 func (node *Node) AppendEntries(ctx context.Context,
-	request *api.AppendEntriesRequest) (*api.AppendEntriesResponse, error) {
+	request *proto.AppendEntriesRequest) (*proto.AppendEntriesResponse, error) {
 	conn, err := node.getConn()
 	if err != nil {
 		return nil, err
 	}
 	ctx, deferFun := node.withDeferFunc(ctx, 500*time.Millisecond)
 	defer deferFun(conn, err)
-	rsp, err := api.NewRaftServiceClient(conn).AppendEntries(ctx, request)
+	rsp, err := proto.NewRaftServiceClient(conn).AppendEntries(ctx, request)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	return rsp, nil
+}
+func (node *Node) Heartbeat(ctx context.Context,
+	request *proto.HeartbeatRequest) (*proto.HeartbeatResponse, error) {
+	conn, err := node.getConn()
+	if err != nil {
+		return nil, err
+	}
+	ctx, deferFun := node.withDeferFunc(ctx, 500*time.Millisecond)
+	defer deferFun(conn, err)
+	rsp, err := proto.NewRaftServiceClient(conn).Heartbeat(ctx, request)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -102,5 +116,41 @@ func (node *Node) Close() {
 }
 
 func (node *Node) startReplicate() {
+	logrus.WithField("node", fmt.Sprintf("%s:%d", node.Ip, node.Port)).Info("startReplicate ...")
+	index := node.raft.DataLength()
+	negotiateFlag := false
+	var err error
+	for node.raft.state == Leader {
 
+		if negotiateFlag {
+			index++
+		} else {
+			if index > 0 {
+				index--
+			}
+		}
+		negotiateFlag, err = node.negotiate(index)
+		if err != nil {
+			logrus.Errorf("negotiate failure", err)
+			return
+		}
+		if index == node.raft.DataLength()-1 {
+			logrus.Info("startReplicate finish")
+			return
+		}
+		if index == 0 && !negotiateFlag {
+			logrus.Error("startReplicate failure not data")
+			return
+		}
+	}
+}
+
+func (node *Node) negotiate(index int) (bool, error) {
+	req := node.raft.NewAppendEntryRequest(index)
+	req.IsApply = true
+	rsp, err := node.AppendEntries(context.Background(), req)
+	if err != nil {
+		return false, err
+	}
+	return rsp.Success, nil
 }

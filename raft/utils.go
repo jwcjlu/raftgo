@@ -5,14 +5,14 @@ import (
 	"io"
 )
 
-func WriteInt(writer io.Writer, data int) error {
-	_, err := fmt.Fprintf(writer, "%8x", data)
+func WriteInt(w io.Writer, data int) error {
+	_, err := fmt.Fprintf(w, "%8x\n", data)
 	return err
 }
 
-func ReadInt(reader io.Reader) (int, error) {
+func ReadInt(r io.Reader) (int, error) {
 	var length int
-	_, err := fmt.Fscanf(reader, "%8x", &length)
+	_, err := fmt.Fscanf(r, "%8x\n", &length)
 	if err != nil {
 		return 0, err
 	}

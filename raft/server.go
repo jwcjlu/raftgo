@@ -3,48 +3,57 @@ package raft
 import (
 	"context"
 	"fmt"
-	"github.com/jwcjlu/raftgo/config"
-	"google.golang.org/grpc"
 	"net"
 
-	"github.com/jwcjlu/raftgo/api"
+	"github.com/jwcjlu/raftgo/config"
+	"github.com/jwcjlu/raftgo/proto"
+
+	"google.golang.org/grpc"
 )
 
-func NewRaftService(raft *Raft, conf *config.Config) *RaftService {
-	return &RaftService{raft: raft, conf: conf}
+func NewService(raft *Raft, conf *config.Config) *Service {
+	return &Service{raft: raft, conf: conf}
 }
 
-type RaftService struct {
+type Service struct {
 	conf *config.Config
 	raft *Raft
 }
 
-func (r *RaftService) Vote(ctx context.Context, req *api.VoteRequest) (*api.VoteResponse, error) {
+func (r *Service) Vote(ctx context.Context, req *proto.VoteRequest) (*proto.VoteResponse, error) {
 	return r.raft.HandlerVote(req)
 }
 
 // 定义方法
-func (r *RaftService) AppendEntries(ctx context.Context, req *api.AppendEntriesRequest) (*api.AppendEntriesResponse, error) {
+func (r *Service) AppendEntries(ctx context.Context, req *proto.AppendEntriesRequest) (*proto.AppendEntriesResponse, error) {
 	r.raft.appendEntryChan <- req
 	rsp := <-r.raft.appendEntryResponseChan
 	return rsp, nil
 
 }
 
+// 定义方法
+func (r *Service) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest) (*proto.HeartbeatResponse, error) {
+	r.raft.heartbeatChan <- req
+	rsp := <-r.raft.heartbeatResponseChan
+	return rsp, nil
+
+}
+
 // 安装快照
-func (r *RaftService) InstallSnapshot(ctx context.Context, req *api.InstallSnapshotRequest) (*api.InstallSnapshotResponse, error) {
+func (r *Service) InstallSnapshot(ctx context.Context, req *proto.InstallSnapshotRequest) (*proto.InstallSnapshotResponse, error) {
 	return nil, nil
 }
 
 type ServiceManager struct {
-	Server *RaftService
+	Server *Service
 }
 
-func NewServiceManager(server *RaftService) *ServiceManager {
+func NewServiceManager(server *Service) *ServiceManager {
 	return &ServiceManager{Server: server}
 }
 func (manager ServiceManager) RegisterService(server *grpc.Server) {
-	api.RegisterRaftServiceServer(server, manager.Server)
+	proto.RegisterRaftServiceServer(server, manager.Server)
 }
 
 func (manager *ServiceManager) Start() (net.Listener, error) {

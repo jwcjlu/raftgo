@@ -3,16 +3,24 @@ package raft
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/jwcjlu/raftgo/api"
 	"github.com/jwcjlu/raftgo/config"
+	proto2 "github.com/jwcjlu/raftgo/proto"
+	"github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"sync"
 )
 
 type Log struct {
 	file   *os.File
-	data   []*api.LogEntry
+	data   []*proto2.LogEntry
 	logDir string
+	temp   []*proto2.LogEntry
+	mu     sync.Mutex
+}
+
+func (log *Log) reset() {
+	log.temp = make([]*proto2.LogEntry, 0)
 }
 
 func (log *Log) Init(config *config.Config) error {
@@ -51,10 +59,12 @@ func (log *Log) Init(config *config.Config) error {
 		readBytes += n
 		log.data = append(log.data, entry)
 	}
+	logrus.Infof("data=%v", log.data)
+	log.mu = sync.Mutex{}
 	return nil
 }
 
-func (log *Log) ApplyLogEntry(entry *api.LogEntry) error {
+func (log *Log) ApplyLogEntry(entry *proto2.LogEntry) error {
 	err := log.encodeEntry(entry)
 	if err != nil {
 		return err
@@ -62,8 +72,53 @@ func (log *Log) ApplyLogEntry(entry *api.LogEntry) error {
 	log.data = append(log.data, entry)
 	return err
 }
+func (log *Log) commitLogEntry(leaderCommit int64) error {
+	if len(log.temp) < 1 {
+		return nil
+	}
+	logrus.Infof("commitLogEntry %v", log.temp)
+	lastEntry := log.LastEntry()
+	isTermDiff := lastEntry.CurrentTerm < log.temp[0].CurrentTerm
+	if isTermDiff && log.temp[0].Index > 1 {
+		return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
+	}
+	if !isTermDiff && log.temp[0].Index > lastEntry.Index {
+		return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
+	}
+	nextIndex := int64(1)
+	if !isTermDiff {
+		nextIndex = lastEntry.Index
+	}
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	var appendEntries []*proto2.LogEntry
+	var lastIndex int
+	for index, entry := range log.temp {
+		if entry.Index <= nextIndex && !isTermDiff {
+			continue
+		}
+		if entry.Index > leaderCommit {
+			break
+		}
+		lastIndex = index
+		appendEntries = append(appendEntries, entry)
+	}
+	for _, entry := range appendEntries {
+		err := log.ApplyLogEntry(entry)
+		if err != nil {
+			return err
+		}
+	}
+	log.temp = log.temp[lastIndex:]
+	return nil
+}
+func (log *Log) temporaryLogEntry(entry *proto2.LogEntry) {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	log.temp = append(log.temp, entry)
+}
 
-func (log *Log) encodeEntry(entry *api.LogEntry) error {
+func (log *Log) encodeEntry(entry *proto2.LogEntry) error {
 	data, err := proto.Marshal(entry)
 	if err != nil {
 		return err
@@ -75,8 +130,24 @@ func (log *Log) encodeEntry(entry *api.LogEntry) error {
 	_, err = log.file.Write(data)
 	return err
 }
+func (log *Log) NewAppendEntryRequest(raft *Raft, data *proto2.LogEntry, term int64, index int) *proto2.AppendEntriesRequest {
+	entry := log.LastEntry()
+	if index > 0 {
+		entry = log.data[index-1]
+	}
+	if index == 0 {
+		entry = &proto2.LogEntry{}
+	}
+	return &proto2.AppendEntriesRequest{
+		Term:         term,
+		PreLogIndex:  entry.Index,
+		PreLogTerm:   entry.CurrentTerm,
+		LeaderCommit: entry.Index,
+		Entry:        data,
+	}
+}
 
-func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
+func (log *Log) decodeEntry() (*proto2.LogEntry, int64, error) {
 	length, err := ReadInt(log.file)
 	if err != nil {
 		return nil, 0, err
@@ -89,13 +160,17 @@ func (log *Log) decodeEntry() (*api.LogEntry, int64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	var entry api.LogEntry
+	var entry proto2.LogEntry
 	err = proto.Unmarshal(data, &entry)
-	return &entry, int64(length + 8), err
+	return &entry, int64(length + 9), err
 }
-func (log *Log) LastEntry() *api.LogEntry {
+func (log *Log) LastEntry() *proto2.LogEntry {
 	if len(log.data) < 1 {
-		return &api.LogEntry{}
+		return &proto2.LogEntry{}
 	}
 	return log.data[len(log.data)-1]
+}
+
+func (log *Log) DataLength() int {
+	return len(log.data)
 }
