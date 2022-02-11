@@ -134,7 +134,7 @@ func (node *Node) startReplicate() {
 			logrus.Errorf("negotiate failure", err)
 			return
 		}
-		if index == node.raft.DataLength()-1 {
+		if index == node.raft.DataLength()-1 && negotiateFlag {
 			logrus.Info("startReplicate finish")
 			return
 		}

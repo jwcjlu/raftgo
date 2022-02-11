@@ -139,11 +139,10 @@ func (log *Log) NewAppendEntryRequest(raft *Raft, data *proto2.LogEntry, term in
 		entry = &proto2.LogEntry{}
 	}
 	return &proto2.AppendEntriesRequest{
-		Term:         term,
-		PreLogIndex:  entry.Index,
-		PreLogTerm:   entry.CurrentTerm,
-		LeaderCommit: entry.Index,
-		Entry:        data,
+		Term:        term,
+		PreLogIndex: entry.Index,
+		PreLogTerm:  entry.CurrentTerm,
+		Entry:       data,
 	}
 }
 

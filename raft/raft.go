@@ -253,14 +253,14 @@ func (r *Raft) HandlerFollowerAppendEntry(req *proto.AppendEntriesRequest) {
 		r.appendEntryResponseChan <- rsp
 		return
 	}
-	r.log.commitLogEntry(req.LeaderCommit)
+	logrus.Infof("AppendEntriesRequest:%v", req)
 	entry := r.log.LastEntry()
 	if entry.Index == req.PreLogIndex && entry.CurrentTerm == req.PreLogTerm {
 		rsp.Success = true
 	}
 	if req.IsApply {
 		r.log.ApplyLogEntry(req.Entry)
-	} else {
+	} else if rsp.Success {
 		r.log.temporaryLogEntry(req.Entry)
 	}
 	r.appendEntryResponseChan <- rsp
