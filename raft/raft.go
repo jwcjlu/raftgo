@@ -199,7 +199,7 @@ func (r *Raft) startLeader() {
 		wg.Wait()
 		flag := false
 		if voteGranted >= r.QuorumSize() {
-			r.log.ApplyLogEntry(entry)
+			r.log.ApplyLogEntry([]*proto.LogEntry{entry})
 			r.commitIndex = entry.Index
 			r.index = entry.Index
 			flag = true
@@ -208,12 +208,25 @@ func (r *Raft) startLeader() {
 	}
 
 }
+
+/*
+1、如果term < currentTerm返回 false
+2、如果 votedFor 为空或者为 candidateId，并且候选人的日志至少和自己一样新，那么就投票给他
+*/
 func (r *Raft) HandlerVote(request *proto.VoteRequest) (*proto.VoteResponse, error) {
 	rsp := proto.VoteResponse{Term: r.term, VoteGranted: false}
-	if request.Term > r.term {
+	if request.Term < r.term && r.compareLogEntry(request) {
 		rsp.VoteGranted = true
 	}
 	return &rsp, nil
+}
+
+func (r *Raft) compareLogEntry(request *proto.VoteRequest) bool {
+	entry := r.log.LastEntry()
+	if entry.Index <= request.LastLogIndex && entry.CurrentTerm <= request.Term {
+		return true
+	}
+	return false
 }
 
 func (r *Raft) runFollower() {
@@ -247,6 +260,17 @@ func (r *Raft) runFollower() {
 	}
 }
 
+/*
+1、返回假 如果领导人的任期小于接收者的当前任期（译者注：这里的接收者是指跟随者或者候选人）
+2、返回假 如果接收者日志中没有包含这样一个条目 即该条目的任期在 prevLogIndex 上能和 prevLogTerm 匹配上
+（注：在接收者日志中 如果能找到一个和 prevLogIndex 以及 prevLogTerm 一样的索引和任期的日志条目 则继续执行下面的步骤 否则返回假
+3、如果一个已经存在的条目和新条目（注：即刚刚接收到的日志条目）发生了冲突（因为索引相同，任期不同），
+那么就删除这个已经存在的条目以及它之后的所有条目
+4、追加日志中尚未存在的任何新条目
+5、如果领导人的已知已提交的最高日志条目的索引大于接收者的已知已提交最高日志条目的索引（leaderCommit > commitIndex），
+则把接收者的已知已经提交的最高的日志条目的索引commitIndex 重置为 领导人的已知已经提交的最高的日志条目的索引
+leaderCommit 或者是 上一个新条目的索引 取两者的最小值
+*/
 func (r *Raft) HandlerFollowerAppendEntry(req *proto.AppendEntriesRequest) {
 	rsp := &proto.AppendEntriesResponse{Term: r.term, Success: false}
 	if req.Term < r.term {
@@ -291,6 +315,7 @@ func (r *Raft) runCandidate() {
 			voteGranted := 1
 			r.term++
 			wg := sync.WaitGroup{}
+			entry := r.log.LastEntry()
 			wg.Add(len(r.custer))
 			for _, n := range r.custer {
 				go func(node *Node, term int64) {
@@ -298,8 +323,8 @@ func (r *Raft) runCandidate() {
 					rsp, err := node.Vote(context.Background(), &proto.VoteRequest{
 						Term:         term,
 						CandidateId:  r.id,
-						LastLogIndex: 0,
-						LastLogTerm:  0,
+						LastLogIndex: entry.Index,
+						LastLogTerm:  entry.CurrentTerm,
 					})
 					if err != nil {
 						logrus.Error(err)

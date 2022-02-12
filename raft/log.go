@@ -64,13 +64,15 @@ func (log *Log) Init(config *config.Config) error {
 	return nil
 }
 
-func (log *Log) ApplyLogEntry(entry *proto2.LogEntry) error {
-	err := log.encodeEntry(entry)
-	if err != nil {
-		return err
+func (log *Log) ApplyLogEntry(entries []*proto2.LogEntry) error {
+	for _, entry := range entries {
+		err := log.encodeEntry(entry)
+		if err != nil {
+			return err
+		}
+		log.data = append(log.data, entry)
 	}
-	log.data = append(log.data, entry)
-	return err
+	return nil
 }
 func (log *Log) commitLogEntry(leaderCommit int64) error {
 	if len(log.temp) < 1 {
@@ -103,19 +105,19 @@ func (log *Log) commitLogEntry(leaderCommit int64) error {
 		lastIndex = index
 		appendEntries = append(appendEntries, entry)
 	}
-	for _, entry := range appendEntries {
-		err := log.ApplyLogEntry(entry)
-		if err != nil {
-			return err
-		}
+
+	err := log.ApplyLogEntry(appendEntries)
+	if err != nil {
+		return err
 	}
+
 	log.temp = log.temp[lastIndex:]
 	return nil
 }
-func (log *Log) temporaryLogEntry(entry *proto2.LogEntry) {
+func (log *Log) temporaryLogEntry(entries []*proto2.LogEntry) {
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	log.temp = append(log.temp, entry)
+	log.temp = append(log.temp, entries...)
 }
 
 func (log *Log) encodeEntry(entry *proto2.LogEntry) error {
@@ -142,7 +144,7 @@ func (log *Log) NewAppendEntryRequest(raft *Raft, data *proto2.LogEntry, term in
 		Term:        term,
 		PreLogIndex: entry.Index,
 		PreLogTerm:  entry.CurrentTerm,
-		Entry:       data,
+		Entry:       []*proto2.LogEntry{data},
 	}
 }
 
