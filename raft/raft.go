@@ -124,11 +124,12 @@ func (r *Raft) reset() {
 }
 
 func (r *Raft) runLeader() {
-	timeoutCh := randomTimeout(time.Millisecond * 800)
+	timeoutCh := randomTimeout(time.Millisecond * 150)
 	go r.startLeader()
 	r.reset()
+	r.sendHeartbeat()
+	logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runLeader[currentTerm=%v]", r.term)
 	for r.state == Leader {
-		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runLeader")
 		select {
 		case req := <-r.appendEntryChan:
 			rsp := &proto.AppendEntriesResponse{Term: r.term, Success: false}
@@ -148,25 +149,29 @@ func (r *Raft) runLeader() {
 			}
 			r.heartbeatResponseChan <- rsp
 		case <-timeoutCh:
-			for _, n := range r.custer {
-				go func(node *Node) {
-					rsp, err := node.Heartbeat(context.Background(), &proto.HeartbeatRequest{
-						Term:         r.term,
-						LeaderId:     r.leaderId,
-						LeaderCommit: r.commitIndex,
-					})
-					if err != nil {
-						logrus.Error(err)
-						return
-					}
-					if rsp.Term > r.term {
-						r.state = Follower
-						r.isLeader = false
-					}
-				}(n)
-			}
-			timeoutCh = randomTimeout(time.Millisecond * 800)
+			r.sendHeartbeat()
+			timeoutCh = randomTimeout(time.Millisecond * 150)
 		}
+	}
+}
+
+func (r *Raft) sendHeartbeat() {
+	for _, n := range r.custer {
+		go func(node *Node) {
+			rsp, err := node.Heartbeat(context.Background(), &proto.HeartbeatRequest{
+				Term:         r.term,
+				LeaderId:     r.leaderId,
+				LeaderCommit: r.commitIndex,
+			})
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+			if rsp.Term > r.term {
+				r.state = Follower
+				r.isLeader = false
+			}
+		}(n)
 	}
 }
 
@@ -198,7 +203,7 @@ func (r *Raft) startLeader() {
 				if rsp.Success {
 					voteGranted++
 				} else {
-					go n.startReplicate()
+					go node.startReplicate()
 				}
 			}(n)
 		}
@@ -222,7 +227,7 @@ func (r *Raft) startLeader() {
 func (r *Raft) HandlerVote(request *proto.VoteRequest) (*proto.VoteResponse, error) {
 	rsp := proto.VoteResponse{Term: r.term, VoteGranted: false}
 	var termFlag, logFlag, voteForFlag bool
-	if request.Term < r.term {
+	if request.Term >= r.term {
 		termFlag = true
 	}
 	if r.compareLogEntry(request) {
@@ -240,35 +245,39 @@ func (r *Raft) HandlerVote(request *proto.VoteRequest) (*proto.VoteResponse, err
 
 func (r *Raft) compareLogEntry(request *proto.VoteRequest) bool {
 	entry := r.log.LastEntry()
-	if entry.Index <= request.LastLogIndex && entry.CurrentTerm <= request.Term {
+	if entry.CurrentTerm < request.Term {
+		return true
+	}
+	if entry.Index <= request.LastLogIndex && entry.CurrentTerm == request.Term {
 		return true
 	}
 	return false
 }
 
 func (r *Raft) runFollower() {
-	timeoutCh := randomTimeout(time.Second * 3)
+	timeoutCh := randomTimeout(time.Second * 2)
 	lastTime := time.Now()
+	logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runFollower[currentTerm=%v]", r.term)
 	for r.state == Follower {
-		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runFollower")
 		select {
 		case req := <-r.appendEntryChan:
 			lastTime = time.Now()
 			r.HandlerFollowerAppendEntry(req)
 		case <-timeoutCh:
-			timeoutCh = randomTimeout(time.Second * 3)
-			if time.Now().Sub(lastTime).Seconds() < 3*time.Second.Seconds() {
+			timeoutCh = randomTimeout(time.Second * 2)
+			if time.Now().Sub(lastTime).Seconds() < 2*time.Second.Seconds() {
 				continue
 			}
 			r.state = Candidate
 		case req := <-r.heartbeatChan:
-			timeoutCh = randomTimeout(time.Second * 3)
+			timeoutCh = randomTimeout(time.Second * 2)
 			rsp := &proto.HeartbeatResponse{Term: r.term, Success: false}
 			if req.Term >= r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
 				rsp.Success = true
+				r.term = req.Term
 			}
 			r.log.commitLogEntry(req.LeaderCommit)
 			r.heartbeatResponseChan <- rsp
@@ -290,41 +299,42 @@ leaderCommit 或者是 上一个新条目的索引 取两者的最小值
 */
 func (r *Raft) HandlerFollowerAppendEntry(req *proto.AppendEntriesRequest) {
 	rsp := &proto.AppendEntriesResponse{Term: r.term, Success: false}
-	if req.Term < r.term {
+	logrus.Infof("AppendEntriesRequest[%v] and  currentTerm[%v]", req, r.term)
+	if req.Term < r.term && !req.IsApply {
 		r.appendEntryResponseChan <- rsp
 		return
 	}
-	logrus.Infof("AppendEntriesRequest:%v", req)
 	r.log.TruncateIfNeeded(&proto.LogEntry{CurrentTerm: req.PreLogTerm, Index: req.PreLogIndex})
 	if r.log.IsMatchLog(req) {
 		rsp.Success = true
 	}
-	if req.IsApply || rsp.Success {
+	if rsp.Success {
 		r.log.ApplyLogEntry(req.Entry)
 	}
 	r.appendEntryResponseChan <- rsp
 }
 
 func (r *Raft) runCandidate() {
-	timeoutCh := randomTimeout(time.Second * 3)
+	timeoutCh := randomTimeout(time.Second * 2)
 	isVote := true
 	for r.state == Candidate {
 		r.voteFor = ""
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runCandidate term=%d", r.term)
 		select {
 		case req := <-r.heartbeatChan:
-			timeoutCh = randomTimeout(time.Second * 3)
+			timeoutCh = randomTimeout(time.Second * 2)
 			rsp := &proto.HeartbeatResponse{Term: r.term, Success: false}
 			if req.Term >= r.term {
 				r.state = Follower
 				r.isLeader = false
 				r.leaderId = req.LeaderId
+				r.term = req.Term
 				rsp.Success = true
 			}
 			r.heartbeatResponseChan <- rsp
 		case <-timeoutCh:
 			if !isVote {
-				timeoutCh = randomTimeout(time.Second * 3)
+				timeoutCh = randomTimeout(time.Second * 2)
 				continue
 			}
 			isVote = false
@@ -358,7 +368,7 @@ func (r *Raft) runCandidate() {
 			if voteGranted >= r.QuorumSize() {
 				r.state = Leader
 			}
-			timeoutCh = randomTimeout(time.Second * 3)
+			timeoutCh = randomTimeout(time.Second * 2)
 			isVote = true
 		}
 	}

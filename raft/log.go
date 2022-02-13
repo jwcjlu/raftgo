@@ -127,7 +127,7 @@ func (log *Log) IsMatchLog(req *proto2.AppendEntriesRequest) bool {
 		if entry.CurrentTerm < req.PreLogTerm {
 			return false
 		}
-		if entry.CurrentTerm < req.PreLogTerm && entry.Index == req.PreLogIndex {
+		if entry.CurrentTerm == req.PreLogTerm && entry.Index == req.PreLogIndex {
 			return true
 		}
 	}
@@ -140,17 +140,22 @@ func (log *Log) TruncateIfNeeded(req *proto2.LogEntry) error {
 	var truncateEntry *proto2.LogEntry
 	var err error
 	index := 0
+	truncateFlag := false
 	for index = lastIndex; index >= 0; index-- {
 		entry := log.data[index]
 		if entry.CurrentTerm < req.CurrentTerm {
 			return nil
 		}
-		if entry.CurrentTerm < req.CurrentTerm && entry.Index == req.Index {
+		if entry.CurrentTerm == req.CurrentTerm && entry.Index == req.Index {
 			truncateEntry = entry
+			if index < lastIndex {
+				truncateFlag = true
+			}
 			break
 		}
 	}
-	if truncateEntry != nil {
+	if truncateEntry != nil && truncateFlag {
+		logrus.Infof("TruncateIfNeeded[%v]", truncateEntry)
 		_, err = log.file.Seek(truncateEntry.Position, io.SeekEnd)
 		log.data = log.data[0:index]
 	}

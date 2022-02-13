@@ -130,9 +130,9 @@ func (node *Node) startReplicate() {
 	index := 0
 	for node.raft.state == Leader {
 		if negotiateFlag {
-			node.matchIndex--
-		} else {
 			node.matchIndex++
+		} else {
+			node.matchIndex--
 		}
 		index = node.matchIndex
 		if node.matchIndex < 0 {
@@ -140,7 +140,7 @@ func (node *Node) startReplicate() {
 			index = 0
 
 		}
-		if node.nextIndex == node.matchIndex+1 {
+		if node.raft.DataLength() == node.matchIndex {
 			logrus.Info("startReplicate finish")
 			return
 		}
@@ -163,6 +163,7 @@ func (node *Node) replicate(index int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	logrus.Infof("rsp=[%v] and currentTerm=[%v]", rsp, node.raft.term)
 	return rsp.Success, nil
 }
 
