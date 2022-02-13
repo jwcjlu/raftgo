@@ -23,7 +23,7 @@ message AppendEntriesRequest {
     int64 pre_log_term = 4;
     int64 leader_commit = 5;
     repeated LogEntry entry = 6;
-    bool is_apply=7;
+    bool is_apply = 7;
 
 }
 
@@ -58,6 +58,7 @@ message LogEntry {
     int64 currentTerm = 1;
     int64 index = 2;
     bytes data = 3;
+    int64 position = 4;
 }
 // 定义服务主体
 service RaftService {

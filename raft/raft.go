@@ -39,10 +39,8 @@ type Raft struct {
 	port                    int
 	term                    int64
 	isLeader                bool
-	lastApplied             int64
-	commitIndex             int64
-	lastTerm                int64
-	lastIndex               int64
+	lastApplied             int64 //已经被应用到状态机的最高的日志条目的索引
+	commitIndex             int64 //已知已提交的最高的日志条目的索引
 	index                   int64
 	custer                  []*Node
 	state                   StateEnum
@@ -51,10 +49,11 @@ type Raft struct {
 	heartbeatChan           chan *proto.HeartbeatRequest
 	heartbeatResponseChan   chan *proto.HeartbeatResponse
 	LifeCycle
-	mu     sync.RWMutex
-	CmdCh  chan []byte
-	CmdRsp chan bool
-	log    *Log
+	mu      sync.RWMutex
+	CmdCh   chan []byte
+	CmdRsp  chan bool
+	log     *Log
+	voteFor string
 }
 
 var timeout = 3
@@ -116,11 +115,18 @@ func (r *Raft) Run() {
 	}
 
 }
+func (r *Raft) reset() {
+	r.log.reset()
+	for _, n := range r.custer {
+		n.reset(r.DataLength())
+	}
+
+}
 
 func (r *Raft) runLeader() {
 	timeoutCh := randomTimeout(time.Millisecond * 800)
 	go r.startLeader()
-	r.log.reset()
+	r.reset()
 	for r.state == Leader {
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Info("runLeader")
 		select {
@@ -215,8 +221,19 @@ func (r *Raft) startLeader() {
 */
 func (r *Raft) HandlerVote(request *proto.VoteRequest) (*proto.VoteResponse, error) {
 	rsp := proto.VoteResponse{Term: r.term, VoteGranted: false}
-	if request.Term < r.term && r.compareLogEntry(request) {
-		rsp.VoteGranted = true
+	var termFlag, logFlag, voteForFlag bool
+	if request.Term < r.term {
+		termFlag = true
+	}
+	if r.compareLogEntry(request) {
+		logFlag = true
+	}
+	if len(r.voteFor) == 0 || r.voteFor == request.CandidateId { //每一个任期只有投一票权利
+		voteForFlag = true
+	}
+	rsp.VoteGranted = termFlag && logFlag && voteForFlag
+	if rsp.VoteGranted {
+		r.voteFor = request.CandidateId
 	}
 	return &rsp, nil
 }
@@ -278,14 +295,12 @@ func (r *Raft) HandlerFollowerAppendEntry(req *proto.AppendEntriesRequest) {
 		return
 	}
 	logrus.Infof("AppendEntriesRequest:%v", req)
-	entry := r.log.LastEntry()
-	if entry.Index == req.PreLogIndex && entry.CurrentTerm == req.PreLogTerm {
+	r.log.TruncateIfNeeded(&proto.LogEntry{CurrentTerm: req.PreLogTerm, Index: req.PreLogIndex})
+	if r.log.IsMatchLog(req) {
 		rsp.Success = true
 	}
-	if req.IsApply {
+	if req.IsApply || rsp.Success {
 		r.log.ApplyLogEntry(req.Entry)
-	} else if rsp.Success {
-		r.log.temporaryLogEntry(req.Entry)
 	}
 	r.appendEntryResponseChan <- rsp
 }
@@ -294,6 +309,7 @@ func (r *Raft) runCandidate() {
 	timeoutCh := randomTimeout(time.Second * 3)
 	isVote := true
 	for r.state == Candidate {
+		r.voteFor = ""
 		logrus.WithField("node", fmt.Sprintf("%s:%d", r.ip, r.port)).Infof("runCandidate term=%d", r.term)
 		select {
 		case req := <-r.heartbeatChan:

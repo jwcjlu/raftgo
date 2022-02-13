@@ -15,12 +15,10 @@ type Log struct {
 	file   *os.File
 	data   []*proto2.LogEntry
 	logDir string
-	temp   []*proto2.LogEntry
 	mu     sync.Mutex
 }
 
 func (log *Log) reset() {
-	log.temp = make([]*proto2.LogEntry, 0)
 }
 
 func (log *Log) Init(config *config.Config) error {
@@ -75,52 +73,120 @@ func (log *Log) ApplyLogEntry(entries []*proto2.LogEntry) error {
 	return nil
 }
 func (log *Log) commitLogEntry(leaderCommit int64) error {
-	if len(log.temp) < 1 {
-		return nil
-	}
-	logrus.Infof("commitLogEntry %v", log.temp)
-	lastEntry := log.LastEntry()
-	isTermDiff := lastEntry.CurrentTerm < log.temp[0].CurrentTerm
-	if isTermDiff && log.temp[0].Index > 1 {
-		return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
-	}
-	if !isTermDiff && log.temp[0].Index > lastEntry.Index {
-		return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
-	}
-	nextIndex := int64(1)
-	if !isTermDiff {
-		nextIndex = lastEntry.Index
-	}
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	var appendEntries []*proto2.LogEntry
-	var lastIndex int
-	for index, entry := range log.temp {
-		if entry.Index <= nextIndex && !isTermDiff {
-			continue
+	/*	if len(log.temp) < 1 {
+			return nil
 		}
-		if entry.Index > leaderCommit {
+		logrus.Infof("commitLogEntry %v", log.temp)
+		lastEntry := log.LastEntry()
+		isTermDiff := lastEntry.CurrentTerm < log.temp[0].CurrentTerm
+		if isTermDiff && log.temp[0].Index > 1 {
+			return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
+		}
+		if !isTermDiff && log.temp[0].Index > lastEntry.Index {
+			return fmt.Errorf("data is error lastEntry=%v however temp[0]=%v", lastEntry, log.temp[0])
+		}
+		nextIndex := int64(1)
+		if !isTermDiff {
+			nextIndex = lastEntry.Index
+		}
+		log.mu.Lock()
+		defer log.mu.Unlock()
+		var appendEntries []*proto2.LogEntry
+		var lastIndex int
+		for index, entry := range log.temp {
+			if entry.Index <= nextIndex && !isTermDiff {
+				continue
+			}
+			if entry.Index > leaderCommit {
+				break
+			}
+			lastIndex = index
+			appendEntries = append(appendEntries, entry)
+		}
+
+		err := log.ApplyLogEntry(appendEntries)
+		if err != nil {
+			return err
+		}
+
+		log.temp = log.temp[lastIndex:]*/
+	return nil
+}
+
+func (log *Log) IsMatchLog(req *proto2.AppendEntriesRequest) bool {
+	logrus.Infof("IsMatchLog %v", req)
+	if len(log.data) < 1 && req.PreLogIndex > 0 {
+		return false
+	}
+	if len(log.data) < 1 && req.PreLogIndex == 0 && req.PreLogTerm == 0 {
+		return true
+	}
+	lastIndex := len(log.data) - 1
+	for index := lastIndex; index >= 0; index-- {
+		entry := log.data[index]
+		if entry.CurrentTerm < req.PreLogTerm {
+			return false
+		}
+		if entry.CurrentTerm < req.PreLogTerm && entry.Index == req.PreLogIndex {
+			return true
+		}
+	}
+	return false
+}
+
+//截取日志
+func (log *Log) TruncateIfNeeded(req *proto2.LogEntry) error {
+	lastIndex := len(log.data) - 1
+	var truncateEntry *proto2.LogEntry
+	var err error
+	index := 0
+	for index = lastIndex; index >= 0; index-- {
+		entry := log.data[index]
+		if entry.CurrentTerm < req.CurrentTerm {
+			return nil
+		}
+		if entry.CurrentTerm < req.CurrentTerm && entry.Index == req.Index {
+			truncateEntry = entry
 			break
 		}
-		lastIndex = index
-		appendEntries = append(appendEntries, entry)
 	}
+	if truncateEntry != nil {
+		_, err = log.file.Seek(truncateEntry.Position, io.SeekEnd)
+		log.data = log.data[0:index]
+	}
+	return err
+}
 
-	err := log.ApplyLogEntry(appendEntries)
+//下一个日志
+func (log *Log) nextLogEntry(index int) *proto2.LogEntry {
+	if index >= len(log.data)-1 {
+		return nil
+	}
+	return log.data[index]
+}
+
+//前面的日志
+func (log *Log) preLogEntry(index int) *proto2.LogEntry {
+	if index <= 1 {
+		return nil
+	}
+	return log.data[index-1]
+}
+
+//截取日志
+func (log *Log) Truncate(index int) error {
+	entry := log.data[index]
+	err := log.file.Truncate(entry.Position)
 	if err != nil {
 		return err
 	}
-
-	log.temp = log.temp[lastIndex:]
+	log.file.Seek(entry.Position, io.SeekEnd)
 	return nil
-}
-func (log *Log) temporaryLogEntry(entries []*proto2.LogEntry) {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.temp = append(log.temp, entries...)
 }
 
 func (log *Log) encodeEntry(entry *proto2.LogEntry) error {
+	startPosition, _ := log.file.Seek(0, io.SeekCurrent)
+	entry.Position = startPosition
 	data, err := proto.Marshal(entry)
 	if err != nil {
 		return err

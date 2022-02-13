@@ -30,8 +30,9 @@ type Node struct {
 	pool       Pool
 	raft       *Raft
 	term       int64
-	nextIndex  int64
-	matchIndex int64
+	nextIndex  int //当一个领导人刚获得权力的时候，他初始化所有的 nextIndex 值为自己的最后一条日志的 index 加 1
+	matchIndex int
+	isSync     bool
 }
 
 func (node *Node) Init(connCount int) {
@@ -116,26 +117,36 @@ func (node *Node) Close() {
 }
 
 func (node *Node) startReplicate() {
+	if node.isSync {
+		return
+	}
+	node.isSync = true
+	defer func() {
+		node.isSync = false
+	}()
 	logrus.WithField("node", fmt.Sprintf("%s:%d", node.Ip, node.Port)).Info("startReplicate ...")
-	index := node.raft.DataLength()
 	negotiateFlag := false
 	var err error
+	index := 0
 	for node.raft.state == Leader {
-
 		if negotiateFlag {
-			index++
+			node.matchIndex--
 		} else {
-			if index > 0 {
-				index--
-			}
+			node.matchIndex++
 		}
-		negotiateFlag, err = node.negotiate(index)
-		if err != nil {
-			logrus.Errorf("negotiate failure", err)
+		index = node.matchIndex
+		if node.matchIndex < 0 {
+			node.matchIndex = 0
+			index = 0
+
+		}
+		if node.nextIndex == node.matchIndex+1 {
+			logrus.Info("startReplicate finish")
 			return
 		}
-		if index == node.raft.DataLength()-1 && negotiateFlag {
-			logrus.Info("startReplicate finish")
+		negotiateFlag, err = node.replicate(index)
+		if err != nil {
+			logrus.Errorf("negotiate failure", err)
 			return
 		}
 		if index == 0 && !negotiateFlag {
@@ -145,7 +156,7 @@ func (node *Node) startReplicate() {
 	}
 }
 
-func (node *Node) negotiate(index int) (bool, error) {
+func (node *Node) replicate(index int) (bool, error) {
 	req := node.raft.NewAppendEntryRequest(index)
 	req.IsApply = true
 	rsp, err := node.AppendEntries(context.Background(), req)
@@ -153,4 +164,10 @@ func (node *Node) negotiate(index int) (bool, error) {
 		return false, err
 	}
 	return rsp.Success, nil
+}
+
+func (node *Node) reset(nextIndex int) {
+	node.nextIndex = nextIndex
+	node.matchIndex = nextIndex - 1
+
 }
